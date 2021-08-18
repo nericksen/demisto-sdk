@@ -46,7 +46,7 @@ def raise_file_exists_error():
 
 
 def test_get_created_dir_name(monkeypatch, initiator):
-    monkeypatch.setattr('click.prompt', lambda _: DIR_NAME)
+    monkeypatch.setattr('click.prompt', lambda _, type: DIR_NAME)
     initiator.get_created_dir_name('integration')
     assert initiator.dir_name == DIR_NAME
 
