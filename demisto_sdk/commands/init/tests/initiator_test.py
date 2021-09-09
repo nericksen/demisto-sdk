@@ -54,19 +54,20 @@ def test_get_created_dir_name(monkeypatch, initiator):
 def test_get_object_id(monkeypatch, initiator):
     initiator.dir_name = DIR_NAME
     # test integration object with ID like dir name
-    monkeypatch.setattr('click.prompt', lambda _: 'Y')
+    monkeypatch.setattr('click.confirm', lambda _: 'Y')
     initiator.get_object_id('integration')
     assert initiator.id == DIR_NAME
 
     initiator.id = ''
     # test pack object with ID like dir name
-    monkeypatch.setattr('click.prompt', lambda _: 'Y')
+    monkeypatch.setattr('click.confirm', lambda _: 'Y')
     initiator.get_object_id('pack')
     assert initiator.id == DIR_NAME
 
     initiator.id = ''
     # test script object with ID different than dir name
-    monkeypatch.setattr('click.prompt', generate_multiple_inputs(deque(['N', 'SomeIntegrationID'])))
+    monkeypatch.setattr('click.confirm', lambda _: False)
+    monkeypatch.setattr('click.prompt', lambda _: 'SomeIntegrationID')
     initiator.get_object_id('script')
     assert initiator.id == 'SomeIntegrationID'
 
@@ -75,6 +76,7 @@ def test_get_object_id_custom_name(monkeypatch, initiator):
     """Tests integration with custom name of id
     """
     given_id = 'given_id'
+    monkeypatch.setattr('click.confirm', lambda _: False)
     monkeypatch.setattr('click.prompt', lambda _: given_id)
     initiator.is_pack_creation = False
     initiator.get_object_id('integration')
@@ -157,7 +159,7 @@ class TestCreateMetadata:
         - Ensure inputs are converted correctly to the pack metadata.
         """
         monkeypatch.setattr(
-            'builtins.input',
+            'click.prompt',
             generate_multiple_inputs(
                 deque([
                     PACK_NAME, PACK_DESC, '2', '1', PACK_AUTHOR,
@@ -197,7 +199,7 @@ class TestCreateMetadata:
         - Ensure inputs are converted correctly to the pack metadata.
         """
         monkeypatch.setattr(
-            'builtins.input',
+            'click.prompt',
             generate_multiple_inputs(
                 deque([
                     PACK_NAME, PACK_DESC, '2', '1', PACK_AUTHOR,
@@ -237,7 +239,7 @@ class TestCreateMetadata:
         - Ensure inputs are converted correctly to the pack metadata.
         """
         monkeypatch.setattr(
-            'builtins.input',
+            'click.prompt',
             generate_multiple_inputs(
                 deque([
                     PACK_NAME, PACK_DESC, '4', '1', PACK_AUTHOR,
@@ -279,12 +281,12 @@ def test_create_new_directory(mocker, monkeypatch, initiator):
 
     mocker.patch.object(os, 'mkdir', side_effect=FileExistsError)
     # override dir successfully
-    monkeypatch.setattr('builtins.input', lambda _: 'Y')
+    monkeypatch.setattr('click.confirm', lambda _: 'Y')
     with pytest.raises(FileExistsError):
         assert initiator.create_new_directory()
 
     # fail to create pack cause of existing dir without overriding it
-    monkeypatch.setattr('builtins.input', lambda _: 'N')
+    monkeypatch.setattr('click.confirm', lambda _: False)
     assert initiator.create_new_directory() is False
 
 
