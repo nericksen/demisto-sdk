@@ -60,6 +60,11 @@ class YAMLContentUnifiedObject(YAMLContentObject):
         return script
 
     @property
+    def unit_test_file(self) -> Optional[Path]:
+        patterns = [f'{self.path.stem}_test.py']
+        return next(self._path.parent.glob(patterns=patterns), None)
+
+    @property
     def docker_image(self) -> str:
         """Object docker_image attribute.
 

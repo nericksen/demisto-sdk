@@ -1967,7 +1967,7 @@ def is_pack_path(input_path: str) -> bool:
         - True if the input path is for a given pack.
         - False if the input path is not for a given pack.
     """
-    return os.path.basename(os.path.dirname(input_path)) == PACKS_DIR
+    return os.path.isdir(input_path) and os.path.basename(os.path.dirname(input_path)) == PACKS_DIR
 
 
 def get_relative_path_from_packs_dir(file_path: str) -> str:
