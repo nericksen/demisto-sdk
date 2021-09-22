@@ -36,9 +36,59 @@ class LintGlobalFacts:
     requirements_python2: List[str]
     test_modules: Dict
     has_docker_engine: bool
+    docker_timeout: int
+    keep_container: bool
+    verbose: bool
 
 
-def _get_content_repo(is_external_repo: bool, verbose: bool):
+def build_lint_global_facts(docker_timeout: int, keep_container: bool, verbose: bool) -> LintGlobalFacts:
+    """
+    Builds all the global facts needed for Lint command to be run, including:
+    - Repository Lint is being run on.
+    - Requirements for python 2/3.
+    - Whether machine running Lint has docker engine.
+    - Test modules needed (E.g, CSP, demistomock...)
+    Args:
+        docker_timeout (int): Timeout for Linters using docker.
+        keep_container (bool): Whether to keep container for Linters running docker.
+        verbose (bool): Verbose, for debugging purposes.
+
+    Returns:
+        (LintGlobalFacts): Lint global facts.
+    """
+    is_external_repo = is_external_repository()
+
+    git_repo: Optional[Repo] = _get_content_repo(is_external_repo, verbose)
+
+    pipfile_dir = Path(__file__).parent / 'resources'
+    requirements_python2: List[str] = _get_dev_requirements_from_pipfile_lock(pipfile_dir, '2', verbose)
+    requirements_python3: List[str] = _get_dev_requirements_from_pipfile_lock(pipfile_dir, '3', verbose)
+
+    docker_engine: bool = _has_docker_engine(verbose)
+
+    test_modules = _get_test_modules(git_repo, is_external_repo)
+    return LintGlobalFacts(
+        content_repo=git_repo,
+        requirements_python3=requirements_python3,
+        requirements_python2=requirements_python2,
+        test_modules=test_modules,
+        has_docker_engine=docker_engine,
+        docker_timeout=docker_timeout,
+        keep_container=keep_container,
+        verbose=verbose,
+    )
+
+
+def _get_content_repo(is_external_repo: bool, verbose: bool) -> Repo:
+    """
+    Gets the Content-like repository.
+    Args:
+        is_external_repo (bool): Whether this is an external repository.
+        verbose (bool): Verbose, for debugging purposes.
+
+    Returns:
+        (Repo): Git repository.
+    """
     try:
         git_repo = Repo(os.getcwd(), search_parent_directories=True)
         remote_url = git_repo.remote().urls.__next__()
@@ -56,6 +106,17 @@ def _get_content_repo(is_external_repo: bool, verbose: bool):
 
 
 def _get_dev_requirements_from_pipfile_lock(pipfile_dir: Path, py_num: str, verbose: bool) -> List[str]:
+    """
+    Receives the pipfile dir and gets the pipfile lock requirements by given Python number.
+    The pipfile is expected to reside in pipfile_python{py_num} directory inside `pipfile_dir`.
+    Args:
+        pipfile_dir (Path): Path to the Pipfile dir.
+        py_num (str): Python number to retrieve its Pipfile.
+        verbose (bool): Verbose for debugging purposes.
+
+    Returns:
+        (List[str]) Requirements list.
+    """
     pipfile_lock_path = pipfile_dir / f'pipfile_python{py_num}/Pipfile.lock'
     try:
         with open(file=pipfile_lock_path) as f:
@@ -65,12 +126,23 @@ def _get_dev_requirements_from_pipfile_lock(pipfile_dir: Path, py_num: str, verb
                 log_verbose=verbose)
         return requirements_list
     except (json.JSONDecodeError, IOError, FileNotFoundError, KeyError) as e:
+        # TODO : get rid of all sys exits and do it in one place
         print_error("Can't parse pipfile.lock - Aborting!")
         print_error(f"demisto-sdk-can't parse pipfile.lock {e}")
         sys.exit(1)
 
 
-def get_modules_from_content_repo(content_repo: Repo, modules: Set[Path], is_external_repo: bool):
+def get_modules_from_content_repo(content_repo: Repo, modules: Set[Path], is_external_repo: bool) -> Dict:
+    """
+    Gets modules content from the expected relative path in the given repository.
+    Args:
+        content_repo (Repo): Given repository.
+        modules (Set[Path]): Set of relative paths of modules to be retrieved from GitHub.
+        is_external_repo (bool): Whether this is an external repository.
+
+    Returns:
+        (Dict): Dict of {module relative path: module content}.
+    """
     non_existence_modules: Set[Path] = {module for module in modules if not os.path.exists(module)}
     if non_existence_modules:
         print_warning(f'Could not find the following modules: {non_existence_modules}')
@@ -80,6 +152,15 @@ def get_modules_from_content_repo(content_repo: Repo, modules: Set[Path], is_ext
 
 
 def _get_modules_content_from_github(modules: Set[Path]) -> Dict:
+    """
+    Receives set of modules, gets their content from Github.
+    Args:
+        modules (Set[Path]): Set of relative paths of modules to be retrieved from GitHub.
+
+    Returns:
+        (Dict): Dict of {module relative path: module content}.
+    """
+
     def get_module_content(module: Path):
         url = f'https://raw.githubusercontent.com/demisto/content/master/{module}'
         for trial in range(2):
@@ -116,7 +197,15 @@ def _get_test_modules(content_repo: Optional[Repo], is_external_repo: bool) -> D
     return modules_content
 
 
-def _has_docker_engine(verbose: bool):
+def _has_docker_engine(verbose: bool) -> bool:
+    """
+    Checks whether the machine running lint has docker engine.
+    Args:
+        verbose (bool): Verbose, for debugging purposes.
+
+    Returns:
+        (bool): True if machine running list has docker engine configured, false otherwise.
+    """
     # Validating docker engine connection
     docker_client: docker.DockerClient = docker.from_env()
     try:
@@ -131,24 +220,3 @@ def _has_docker_engine(verbose: bool):
         return False
     print_v('Docker daemon test passed', log_verbose=verbose)
     return True
-
-
-def build_lint_global_facts(verbose: bool) -> LintGlobalFacts:
-    is_external_repo = is_external_repository()
-
-    git_repo: Optional[Repo] = _get_content_repo(is_external_repo, verbose)
-
-    pipfile_dir = Path(__file__).parent / 'resources'
-    requirements_python2: List[str] = _get_dev_requirements_from_pipfile_lock(pipfile_dir, '2', verbose)
-    requirements_python3: List[str] = _get_dev_requirements_from_pipfile_lock(pipfile_dir, '3', verbose)
-
-    docker_engine: bool = _has_docker_engine(verbose)
-
-    test_modules = _get_test_modules(git_repo, is_external_repo)
-    return LintGlobalFacts(
-        content_repo=git_repo,
-        requirements_python3=requirements_python3,
-        requirements_python2=requirements_python2,
-        test_modules=test_modules,
-        has_docker_engine=docker_engine
-    )

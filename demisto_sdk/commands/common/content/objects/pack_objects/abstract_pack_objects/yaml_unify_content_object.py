@@ -64,6 +64,10 @@ class YAMLContentUnifiedObject(YAMLContentObject):
         patterns = [f'{self.path.stem}_test.py']
         return next(self._path.parent.glob(patterns=patterns), None)
 
+    def name(self) -> str:
+        # TODO tom
+        pass
+
     @property
     def docker_image(self) -> str:
         """Object docker_image attribute.
@@ -75,6 +79,15 @@ class YAMLContentUnifiedObject(YAMLContentObject):
             1. Attribute info - https://xsoar.pan.dev/docs/integrations/docker#why-use-docker
         """
         return self.script.get('dockerimage', '')
+
+    @property
+    def script_type(self) -> Optional[str]:
+        """
+        Returns script type, e.g python/powershell.
+        Returns:
+            (Optional[str]) Script type if exists.
+        """
+        return self.script.get('type')
 
     @property
     def docker_image_4_5(self) -> str:
