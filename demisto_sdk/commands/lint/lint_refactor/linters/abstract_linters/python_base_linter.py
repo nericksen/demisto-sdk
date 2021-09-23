@@ -5,6 +5,7 @@ from typing import Union, Optional
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
+from demisto_sdk.commands.lint.lint_refactor.lint_docker_utils import get_python_version_from_image
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
@@ -47,7 +48,7 @@ class PythonBaseLinter(BaseLinter):
 
     def get_python_version(self) -> float:
         if self.lint_global_facts.has_docker_engine:
-            python_version = next((self.get_python_version_from_image(image) for image in
+            python_version = next((get_python_version_from_image(image) for image in
                                    self.lint_package_facts.images), self.DEFAULT_PYTHON3)
         else:
             # TODO: why default is python3 if subtype not found?

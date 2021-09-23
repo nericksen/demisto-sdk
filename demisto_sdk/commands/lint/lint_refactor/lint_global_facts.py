@@ -42,7 +42,8 @@ class LintGlobalFacts:
     verbose: bool
 
 
-def build_lint_global_facts(docker_timeout: int, keep_container: bool, verbose: bool) -> LintGlobalFacts:
+def build_lint_global_facts(docker_timeout: int, keep_container: bool, pytest_xml_output: Optional[str],
+                            verbose: bool) -> LintGlobalFacts:
     """
     Builds all the global facts needed for Lint command to be run, including:
     - Repository Lint is being run on.
@@ -76,6 +77,7 @@ def build_lint_global_facts(docker_timeout: int, keep_container: bool, verbose: 
         has_docker_engine=docker_engine,
         docker_timeout=docker_timeout,
         keep_container=keep_container,
+        pytest_xml_output=pytest_xml_output,
         verbose=verbose,
     )
 

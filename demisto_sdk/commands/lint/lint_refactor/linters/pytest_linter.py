@@ -2,7 +2,6 @@ import json
 import os
 from typing import Union, Dict, Tuple, Optional
 
-import click
 from wcmatch.pathlib import Path
 
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
@@ -17,7 +16,7 @@ from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPacka
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.docker_base_linter import DockerBaseLinter
 
 
-class PylintLinter(DockerBaseLinter):
+class PytestLinter(DockerBaseLinter):
     # Dict of mapping docker exit code to a tuple (LinterResult, log prompt suffix, log prompt color)
     CONTAINER_EXIT_CODE_FOR_COVERAGE_AND_TEST_FILE = [0, 1, 2, 5]
     DOCKER_EXIT_CODE_TO_LINTER_STATUS: Dict[int, Tuple[LinterResult, str, str]] = {
@@ -38,7 +37,8 @@ class PylintLinter(DockerBaseLinter):
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
                  lint_package_facts: LintPackageFacts):
-        super().__init__(lint_flags.disable_pytest, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
+        super().__init__(lint_flags.disable_pytest, lint_global_facts, package, self.LINTER_NAME, lint_package_facts,
+                         self.DOCKER_EXIT_CODE_TO_LINTER_STATUS)
         self.report_coverage = not lint_flags.no_coverage
 
     def should_run(self) -> bool:
@@ -48,13 +48,21 @@ class PylintLinter(DockerBaseLinter):
             super().should_run()
         ])
 
-    def process_docker_results(self, container_obj, container_exit_code, log_prompt: str, test_xml: str = 'TODO'):
+    def process_docker_results(self, container_obj, container_exit_code, log_prompt: str) -> LinterResult:
+        """
+        Overriding process results because pytest has special treatment for tests and coverage files.
+        Args:
+            container_obj:
+            container_exit_code:
+            log_prompt:
+
+        Returns:
+            TODO
+        """
         if container_exit_code in self.CONTAINER_EXIT_CODE_FOR_COVERAGE_AND_TEST_FILE:
             self.handle_test_xml_file(container_obj)
             self.handle_coverage(container_obj)
-        linter_result, log_prompt_suffix, log_color = self.DOCKER_EXIT_CODE_TO_LINTER_STATUS.get(
-            container_exit_code, (LinterResult.SUCCESS, ' - Successfully finished', 'green'))
-        click.secho(f'{log_prompt}{log_prompt_suffix}', fg=log_color)
+        return super().process_docker_results(container_obj, container_exit_code, log_prompt)
         # TODO - see how to handle commented logic
         #                 test_json = json.loads(get_file_from_container(container_obj=container_obj,
         #                                                                container_path="/devwork/report_pytest.json",
@@ -62,7 +70,6 @@ class PylintLinter(DockerBaseLinter):
         #         for test in test_json.get('report', {}).get("tests"):
         #             if test.get("call", {}).get("longrepr"):
         #                 test["call"]["longrepr"] = test["call"]["longrepr"].split('\n')
-        return linter_result
 
     def handle_test_xml_file(self, container_obj):
         xml_output_path: Optional[str] = self.lint_global_facts.pytest_xml_output

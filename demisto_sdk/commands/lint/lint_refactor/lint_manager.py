@@ -1,10 +1,72 @@
-import logging
 import os
 from typing import List, Set, Union
+# STD python packages
+import io
+import logging
+import os
+import re
+import shlex
+import shutil
+import sqlite3
+import tarfile
+import textwrap
+from contextlib import contextmanager
+from functools import lru_cache
+from pathlib import Path
+from typing import Dict, Generator, List, Optional, Union
+# STD packages
+import concurrent.futures
+import json
+import logging
+import os
+import re
+import sys
+import textwrap
+from typing import Any, Dict, List, Set
 
-from git import Repo
+# Third party packages
+import docker
+import docker.errors
+import git
+import requests.exceptions
+import urllib3.exceptions
 from wcmatch.pathlib import Path
 
+from demisto_sdk.commands.common.constants import (PACKS_PACK_META_FILE_NAME,
+                                                   TYPE_PWSH, TYPE_PYTHON,
+                                                   DemistoException)
+# Local packages
+from demisto_sdk.commands.common.logger import Colors
+from demisto_sdk.commands.common.tools import (find_file, find_type,
+                                               get_content_path,
+                                               get_file_displayed_name,
+                                               get_json,
+                                               is_external_repository,
+                                               print_error, print_v,
+                                               print_warning,
+                                               retrieve_file_ending)
+from demisto_sdk.commands.lint.helpers import (EXIT_CODES, FAIL, PWSH_CHECKS,
+                                               PY_CHCEKS,
+                                               build_skipped_exit_code,
+                                               generate_coverage_report,
+                                               get_test_modules, validate_env)
+from demisto_sdk.commands.lint.linter import Linter
+
+# Third party packages
+import coverage
+import docker
+import docker.errors
+import git
+import requests
+from docker.models.containers import Container
+
+# Local packages
+from demisto_sdk.commands.common.constants import (TYPE_PWSH, TYPE_PYTHON,
+                                                   DemistoException)
+from demisto_sdk.commands.com
+from git import Repo
+from wcmatch.pathlib import Path
+import click
 from demisto_sdk.commands.common.constants import (INTEGRATIONS_DIR, SCRIPTS_DIR,
                                                    DemistoException)
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
@@ -13,11 +75,21 @@ from demisto_sdk.commands.common.logger import Colors
 from demisto_sdk.commands.common.tools import (print_v,
                                                print_warning)
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts, build_lint_global_facts
-
-logger = logging.getLogger('demisto-sdk')
+from demisto_sdk.commands.lint.lint_refactor.linters.bandit import BanditLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.flake8_linter import Flake8Linter
+from demisto_sdk.commands.lint.lint_refactor.linters.mypy_linter import MyPyLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.pwsh_analyze_linter import PowershellAnalyzeLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.pwsh_test_linter import PowershellTestLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.pylint_linter import PylintLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.pytest_linter import PytestLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.vulture_linter import VultureLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.xsoar_linter import XSOARLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
 
 
 class LintManager:
+    ALL_LINTERS: List[BaseLinter] = [BanditLinter, Flake8Linter, MyPyLinter, PowershellAnalyzeLinter,
+                                     PowershellTestLinter, PylintLinter, PytestLinter, VultureLinter, XSOARLinter]
     """ LintManager used to activate lint command using Linters in a single or multi thread.
 
     Attributes:
@@ -86,7 +158,7 @@ class LintManager:
         if git:
             packages = self._filter_changed_packages(content_repo, packages, base_branch)
 
-        print(f"Execute lint and test on {Colors.Fg.cyan}{len(packages)}/{total_found}{Colors.reset} packages")
+        click.secho(f'Execute lint and test on {Colors.Fg.cyan}{len(packages)}/{total_found}{Colors.reset} packages')
 
         return packages
 
@@ -140,6 +212,14 @@ class LintManager:
         for pkg in packages_filtered:
             print_v(f"Found changed package {Colors.Fg.cyan}{pkg}{Colors.reset}", log_verbose=self._verbose)
         return packages_filtered
+
+    def get_linters(self, package: Union[Script, Integration]) -> List[BaseLinter]:
+        return [linter for linter in self.ALL_LINTERS if linter.should_run()]
+
+    @staticmethod
+    def run_linters(linters: List[BaseLinter]):
+        for linter in linters:
+            linter.run()
 
     def run_dev_packages(self, parallel: int, no_flake8: bool, no_xsoar_linter: bool, no_bandit: bool, no_mypy: bool,
                          no_pylint: bool, no_coverage: bool, coverage_report: str,
@@ -209,28 +289,30 @@ class LintManager:
             return_warning_code: int = 0
             results = []
             # Executing lint checks in different threads
-            for pack in sorted(self._pkgs):
-                linter: Linter = Linter(pack_dir=pack,
-                                        content_repo="" if not self._facts["content_repo"] else
-                                        Path(self._facts["content_repo"].working_dir),
-                                        req_2=self._facts["requirements_2"],
-                                        req_3=self._facts["requirements_3"],
-                                        docker_engine=self._facts["docker_engine"],
-                                        docker_timeout=docker_timeout)
-                results.append(executor.submit(linter.run_dev_packages,
-                                               no_flake8=no_flake8,
-                                               no_bandit=no_bandit,
-                                               no_mypy=no_mypy,
-                                               no_vulture=no_vulture,
-                                               no_xsoar_linter=no_xsoar_linter,
-                                               no_pylint=no_pylint,
-                                               no_test=no_test,
-                                               no_pwsh_analyze=no_pwsh_analyze,
-                                               no_pwsh_test=no_pwsh_test,
-                                               modules=self._facts["test_modules"],
-                                               keep_container=keep_container,
-                                               test_xml=test_xml,
-                                               no_coverage=no_coverage))
+            for package in sorted(self.packages, key=lambda package: package.path):
+                results.append(executor.submit(self.run_linters,
+                                               linters=self.get_linters(package)))
+                # linter: Linter = Linter(pack_dir=pack,
+                #                         content_repo="" if not self._facts["content_repo"] else
+                #                         Path(self._facts["content_repo"].working_dir),
+                #                         req_2=self._facts["requirements_2"],
+                #                         req_3=self._facts["requirements_3"],
+                #                         docker_engine=self._facts["docker_engine"],
+                #                         docker_timeout=docker_timeout)
+                # results.append(executor.submit(linter.run_dev_packages,
+                #                                no_flake8=no_flake8,
+                #                                no_bandit=no_bandit,
+                #                                no_mypy=no_mypy,
+                #                                no_vulture=no_vulture,
+                #                                no_xsoar_linter=no_xsoar_linter,
+                #                                no_pylint=no_pylint,
+                #                                no_test=no_test,
+                #                                no_pwsh_analyze=no_pwsh_analyze,
+                #                                no_pwsh_test=no_pwsh_test,
+                #                                modules=self._facts["test_modules"],
+                #                                keep_container=keep_container,
+                #                                test_xml=test_xml,
+                #                                no_coverage=no_coverage))
             try:
                 for future in concurrent.futures.as_completed(results):
                     pkg_status = future.result()

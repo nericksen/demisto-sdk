@@ -1,17 +1,11 @@
-import os
-import shlex
 from abc import abstractmethod
-from functools import lru_cache
 from typing import Union, Dict, Optional
 
 import click
-import docker
-import docker.errors
-from docker.models.containers import Container
 
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
-from demisto_sdk.commands.common.tools import print_v, print_warning, run_command_os
+from demisto_sdk.commands.common.tools import print_v, run_command_os
 from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
@@ -70,4 +64,3 @@ class BaseLinter:
     @abstractmethod
     def build_linter_command(self) -> str:
         pass
-

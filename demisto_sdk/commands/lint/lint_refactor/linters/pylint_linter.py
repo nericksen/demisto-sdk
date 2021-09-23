@@ -1,7 +1,5 @@
 from typing import Tuple, Union, Dict
 
-import click
-
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
@@ -32,12 +30,8 @@ class PylintLinter(DockerBaseLinter):
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
                  lint_package_facts: LintPackageFacts):
-        super().__init__(lint_flags.disable_pylint, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
-
-    def process_docker_results(self, container_obj, container_exit_code, log_prompt):
-        linter_result, log_prompt_suffix, log_color = self.DOCKER_EXIT_CODE_TO_LINTER_STATUS.get(
-            container_exit_code, (LinterResult.SUCCESS, ' - Successfully finished', 'green'))
-        click.secho(f'{log_prompt}{log_prompt_suffix}', fg=log_color)
+        super().__init__(lint_flags.disable_pylint, lint_global_facts, package, self.LINTER_NAME, lint_package_facts,
+                         self.DOCKER_EXIT_CODE_TO_LINTER_STATUS)
 
     def should_run(self) -> bool:
         return all([

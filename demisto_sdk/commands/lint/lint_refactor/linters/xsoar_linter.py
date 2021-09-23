@@ -5,11 +5,7 @@ from typing import List
 from typing import Union, Dict
 
 import click
-from demisto_sdk.commands.lint.resources.pylint_plugins.base_checker import base_msg
-from demisto_sdk.commands.lint.resources.pylint_plugins.certified_partner_level_checker import cert_partner_msg
-from demisto_sdk.commands.lint.resources.pylint_plugins.community_level_checker import community_msg
-from demisto_sdk.commands.lint.resources.pylint_plugins.partner_level_checker import partner_msg
-from demisto_sdk.commands.lint.resources.pylint_plugins.xsoar_level_checker import xsoar_msg
+
 from demisto_sdk.commands.common.constants import SCRIPTS_DIR
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
@@ -20,6 +16,11 @@ from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.resources.pylint_plugins.base_checker import base_msg
+from demisto_sdk.commands.lint.resources.pylint_plugins.certified_partner_level_checker import cert_partner_msg
+from demisto_sdk.commands.lint.resources.pylint_plugins.community_level_checker import community_msg
+from demisto_sdk.commands.lint.resources.pylint_plugins.partner_level_checker import partner_msg
+from demisto_sdk.commands.lint.resources.pylint_plugins.xsoar_level_checker import xsoar_msg
 
 
 class XSOARLinter(PythonBaseLinter):

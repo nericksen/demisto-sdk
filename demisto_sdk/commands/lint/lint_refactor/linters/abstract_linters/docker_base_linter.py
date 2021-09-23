@@ -1,14 +1,12 @@
-# STD python packages
 import hashlib
 import io
 import os
 import platform
 import time
 from abc import abstractmethod
-from typing import Tuple, Union, List
+from typing import Tuple, Union, List, Dict
 
 import click
-# 3-rd party packages
 import docker
 import docker.errors
 import docker.models.containers
@@ -16,13 +14,13 @@ import requests.exceptions
 import urllib3.exceptions
 from jinja2 import Environment, FileSystemLoader, exceptions
 from wcmatch.pathlib import Path
-from demisto_sdk.commands.lint.lint_refactor.lint_docker_utils import get_python_version_from_image
+
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.tools import print_warning, print_v
-# Local packages
 from demisto_sdk.commands.lint.helpers import stream_docker_container_output
 from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult
+from demisto_sdk.commands.lint.lint_refactor.lint_docker_utils import get_python_version_from_image
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
@@ -31,10 +29,12 @@ from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linte
 class DockerBaseLinter(BaseLinter):
 
     def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_name: str, lint_package_facts: LintPackageFacts, env=os.environ):
+                 lint_name: str, lint_package_facts: LintPackageFacts,
+                 docker_exit_code_to_linter_results: Dict[int, Tuple[LinterResult, str, str]], env=os.environ):
         super().__init__(disable_flag, lint_global_facts, package, lint_name, lint_package_facts, env)
         self._docker_client: docker.DockerClient = docker.from_env(timeout=lint_global_facts.docker_timeout)
         self._docker_hub_login = self._docker_login()
+        self.docker_exit_code_to_linter_results = docker_exit_code_to_linter_results
 
     @abstractmethod
     def build_linter_command(self) -> str:
@@ -89,7 +89,7 @@ class DockerBaseLinter(BaseLinter):
             container_exit_code = container_status.get('StatusCode')
             click.secho(f'{log_prompt} - exit-code: {container_exit_code}')
 
-            linter_result = self.process_docker_results(container_obj, container_exit_code, log_prompt)
+            linter_result: LinterResult = self.process_docker_results(container_obj, container_exit_code, log_prompt)
             # Collect container logs on FAIL
             if linter_result == LinterResult.FAIL:
                 output = container_obj.logs().decode('utf-8')
@@ -109,9 +109,11 @@ class DockerBaseLinter(BaseLinter):
 
         return exit_code, output
 
-    @abstractmethod
-    def process_docker_results(self, container_obj, container_exit_code, log_prompt):
-        pass
+    def process_docker_results(self, container_obj, container_exit_code, log_prompt) -> LinterResult:
+        linter_result, log_prompt_suffix, log_color = self.docker_exit_code_to_linter_results.get(
+            container_exit_code, (LinterResult.SUCCESS, ' - Successfully finished', 'green'))
+        click.secho(f'{log_prompt}{log_prompt_suffix}', fg=log_color)
+        return linter_result
 
     def run(self):
         for test_image in self.lint_package_facts.images:
@@ -121,8 +123,15 @@ class DockerBaseLinter(BaseLinter):
                 if errors:
                     # TODO handle max retries
                     continue
-            if image_id:
-                exit_code, output = self.run_on_image(image_id)
+            if image_id and not errors:
+                for trial in range(2):
+                    exit_code, output = self.run_on_image(image_id)
+                    if (exit_code == LinterResult.RERUN and trial == 1) or \
+                        (exit_code in [LinterResult.FAIL, LinterResult.SUCCESS]):
+                        # TODO handle logic for finish retry
+                        break
+
+        return exit_code, output
 
     def should_run(self) -> bool:
         return all([

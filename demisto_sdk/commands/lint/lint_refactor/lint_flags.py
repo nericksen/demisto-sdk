@@ -10,4 +10,5 @@ class LintFlags:
     disable_pytest: bool
     disable_vulture: bool
     disable_xsoar_linter: bool
+    disable_pwsh_analyze: bool
     no_coverage: bool
