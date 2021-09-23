@@ -38,6 +38,7 @@ class LintGlobalFacts:
     has_docker_engine: bool
     docker_timeout: int
     keep_container: bool
+    pytest_xml_output: Optional[str]
     verbose: bool
 
 

@@ -5,7 +5,7 @@ from demisto_sdk.commands.common.content.objects.pack_objects.script.script impo
 from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
 
 
 class MyPyLinter(PythonBaseLinter):
@@ -13,7 +13,7 @@ class MyPyLinter(PythonBaseLinter):
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
                  lint_package_facts: LintPackageFacts):
-        super().__init__(lint_flags.disable_flake8, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
+        super().__init__(lint_flags.disable_mypy, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
 
     def should_run(self) -> bool:
         return all([
@@ -42,7 +42,7 @@ class MyPyLinter(PythonBaseLinter):
         command += ' --show-error-codes'
         # Use visually nicer output in error messages
         command += ' --pretty'
-        # This flag enables redefinion of a variable with an arbitrary type in some contexts.
+        # This flag enables redefinition of a variable with an arbitrary type in some contexts.
         command += ' --allow-redefinition'
         # Get the full path to the file.
         command += ' --show-absolute-path'

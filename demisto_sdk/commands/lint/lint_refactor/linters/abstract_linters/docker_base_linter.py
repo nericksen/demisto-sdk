@@ -5,7 +5,7 @@ import os
 import platform
 import time
 from abc import abstractmethod
-from typing import Tuple, Union, List, Dict
+from typing import Tuple, Union, List
 
 import click
 # 3-rd party packages
@@ -16,38 +16,23 @@ import requests.exceptions
 import urllib3.exceptions
 from jinja2 import Environment, FileSystemLoader, exceptions
 from wcmatch.pathlib import Path
-
+from demisto_sdk.commands.lint.lint_refactor.lint_docker_utils import get_python_version_from_image
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.tools import print_warning, print_v
 # Local packages
 from demisto_sdk.commands.lint.helpers import stream_docker_container_output
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.base_linter import BaseLinter
-from demisto_sdk.commands.lint.lint_refactor.linters.lint_constants import LinterResult
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
 
 
 class DockerBaseLinter(BaseLinter):
-    # Dict of mapping docker exit code to a tuple (LinterResult, log prompt suffix, log prompt color)
-    DOCKER_EXIT_CODE_TO_LINTER_STATUS: Dict[int, Tuple[LinterResult, str, str]] = {
-        # 1-fatal message issued
-        1: (LinterResult.FAIL, ' - Finished errors found', 'red'),
-        # 2-Error message issued
-        2: (LinterResult.FAIL, ' - Finished errors found', 'red'),
-        # 4-Warning message issued
-        4: (LinterResult.SUCCESS, ' - Successfully finished - warnings found', 'yellow'),
-        # 8-refactor message issued
-        8: (LinterResult.SUCCESS, ' - Successfully finished - warnings found', 'yellow'),
-        # 16-convention message issued
-        16: (LinterResult.SUCCESS, ' - Successfully finished - warnings found', 'yellow'),
-        # 32-usage error
-        32: (LinterResult.RERUN, ' - Finished - Usage error', 'red')
-    }
 
     def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_name: str, lint_package_facts: LintPackageFacts):
-        super().__init__(disable_flag, lint_global_facts, package, lint_name, lint_package_facts)
+                 lint_name: str, lint_package_facts: LintPackageFacts, env=os.environ):
+        super().__init__(disable_flag, lint_global_facts, package, lint_name, lint_package_facts, env)
         self._docker_client: docker.DockerClient = docker.from_env(timeout=lint_global_facts.docker_timeout)
         self._docker_hub_login = self._docker_login()
 
@@ -84,12 +69,16 @@ class DockerBaseLinter(BaseLinter):
         # Run container
         exit_code = LinterResult.SUCCESS
         output = ''
+        # test_json
         try:
+            # cov = '' if no_coverage else self._pack_abs_dir.stem
+            uid = os.getuid() or 4000
+            print_v(f'{log_prompt} - user UID for running {self.linter_name}: {uid}', self.verbose)
             container_obj: docker.models.containers.Container = self._docker_client.containers.run(
                 name=container_name,
                 image=test_image,
                 command=[self.build_linter_command()],
-                user=f'{os.getuid()}:4000',
+                user=f'{uid}:4000',
                 detach=True,
                 environment=self.lint_package_facts.env_vars
             )
@@ -100,9 +89,7 @@ class DockerBaseLinter(BaseLinter):
             container_exit_code = container_status.get('StatusCode')
             click.secho(f'{log_prompt} - exit-code: {container_exit_code}')
 
-            linter_result, log_prompt_suffix, log_color = self.DOCKER_EXIT_CODE_TO_LINTER_STATUS.get(
-                container_exit_code, (LinterResult.SUCCESS, ' - Successfully finished', 'green'))
-            click.secho(f'{log_prompt}{log_prompt_suffix}', fg=log_color)
+            linter_result = self.process_docker_results(container_obj, container_exit_code, log_prompt)
             # Collect container logs on FAIL
             if linter_result == LinterResult.FAIL:
                 output = container_obj.logs().decode('utf-8')
@@ -121,6 +108,10 @@ class DockerBaseLinter(BaseLinter):
             output = str(e)
 
         return exit_code, output
+
+    @abstractmethod
+    def process_docker_results(self, container_obj, container_exit_code, log_prompt):
+        pass
 
     def run(self):
         for test_image in self.lint_package_facts.images:
@@ -165,7 +156,7 @@ class DockerBaseLinter(BaseLinter):
             - Empty and warning message if image is neither.
         """
         # Get requirements file for image
-        python_number_from_image: float = self.get_python_version_from_image(docker_image)
+        python_number_from_image: float = get_python_version_from_image(docker_image)
         if 2 < python_number_from_image < 3:
             requirements = self.lint_global_facts.requirements_python2
         elif python_number_from_image > 3:

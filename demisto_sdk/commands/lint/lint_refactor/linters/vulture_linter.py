@@ -6,7 +6,7 @@ from demisto_sdk.commands.common.content.objects.pack_objects.script.script impo
 from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
 
 
 class VultureLinter(PythonBaseLinter):
@@ -26,7 +26,7 @@ class VultureLinter(PythonBaseLinter):
         """
         Build command to execute with pylint module https://github.com/jendrikseipp/vulture.
         Returns:
-           (str): vulture command
+           (str): vulture command.
         """
         command = f'{self.get_python_exec()} -m vulture'
         # Excluded files

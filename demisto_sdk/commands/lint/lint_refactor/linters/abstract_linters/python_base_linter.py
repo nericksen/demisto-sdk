@@ -1,12 +1,13 @@
+import os
 from abc import abstractmethod
-from typing import Union
+from typing import Union, Optional
 
-from demisto_sdk.commands.common.constants import (TYPE_PYTHON)
+from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.base_linter import BaseLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
 
 
 class PythonBaseLinter(BaseLinter):
@@ -14,8 +15,9 @@ class PythonBaseLinter(BaseLinter):
     DEFAULT_PYTHON2 = 2.7
 
     def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_name: str, lint_package_facts: LintPackageFacts):
-        super().__init__(disable_flag, lint_global_facts, package, lint_name, lint_package_facts)
+                 lint_name: str, lint_package_facts: LintPackageFacts, env=os.environ,
+                 cwd_for_linter: Optional[str] = None):
+        super().__init__(disable_flag, lint_global_facts, package, lint_name, lint_package_facts, env, cwd_for_linter)
 
     @abstractmethod
     def build_linter_command(self) -> str:

@@ -5,7 +5,7 @@ from demisto_sdk.commands.common.content.objects.pack_objects.script.script impo
 from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
 
 
 class BanditLinter(PythonBaseLinter):
@@ -13,7 +13,7 @@ class BanditLinter(PythonBaseLinter):
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
                  lint_package_facts: LintPackageFacts):
-        super().__init__(lint_flags.disable_flake8, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
+        super().__init__(lint_flags.disable_bandit, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
 
     def should_run(self) -> bool:
         return all([
@@ -23,9 +23,9 @@ class BanditLinter(PythonBaseLinter):
 
     def build_linter_command(self) -> str:
         """
-        Build command for executing bandit lint check https://github.com/PyCQA/bandit
+        Build command for executing bandit lint check https://github.com/PyCQA/bandit.
         Returns:
-            (str): bandit command
+            (str): bandit command.
         """
         command = 'python3 -m bandit'
         # Reporting only issues with high and medium severity level
