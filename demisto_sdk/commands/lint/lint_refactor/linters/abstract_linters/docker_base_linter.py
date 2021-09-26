@@ -59,7 +59,7 @@ class DockerBaseLinter(BaseLinter):
         except docker.errors.APIError:
             return False
 
-    def run_on_image(self, test_image) -> Tuple[LinterResult, str]:
+    def run_on_image(self, test_image: str) -> ImageTestReport:
         log_prompt = f'{self.package.name()} - {self.linter_name} - Image {test_image}'
         click.secho(f'{log_prompt} - Start')
         container_name = f'{self.package.name()}-{self.linter_name}'
@@ -89,7 +89,7 @@ class DockerBaseLinter(BaseLinter):
             container_exit_code = container_status.get('StatusCode')
             click.secho(f'{log_prompt} - exit-code: {container_exit_code}')
 
-            linter_result: LinterResult = self.process_docker_results(container_obj, container_exit_code, log_prompt)
+            linter_result: LinterResult = self.process_docker_results(container_obj, container_exit_code, test_image)
             # Collect container logs on FAIL
             if linter_result == LinterResult.FAIL:
                 output = container_obj.logs().decode('utf-8')
@@ -106,10 +106,12 @@ class DockerBaseLinter(BaseLinter):
             click.secho(f'{log_prompt} - Unable to run {self.linter_name}', fg='red')
             exit_code = LinterResult.RERUN
             output = str(e)
+            self
 
         return exit_code, output
 
-    def process_docker_results(self, container_obj, container_exit_code, log_prompt) -> LinterResult:
+    def process_docker_results(self, container_obj, container_exit_code, test_image: str) -> LinterResult:
+        log_prompt: str = f'{self.package.name()} - {self.linter_name} - Image {test_image}'
         linter_result, log_prompt_suffix, log_color = self.docker_exit_code_to_linter_results.get(
             container_exit_code, (LinterResult.SUCCESS, ' - Successfully finished', 'green'))
         click.secho(f'{log_prompt}{log_prompt_suffix}', fg=log_color)
@@ -127,7 +129,7 @@ class DockerBaseLinter(BaseLinter):
                 for trial in range(2):
                     exit_code, output = self.run_on_image(image_id)
                     if (exit_code == LinterResult.RERUN and trial == 1) or \
-                        (exit_code in [LinterResult.FAIL, LinterResult.SUCCESS]):
+                            (exit_code in [LinterResult.FAIL, LinterResult.SUCCESS]):
                         # TODO handle logic for finish retry
                         break
 

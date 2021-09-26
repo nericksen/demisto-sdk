@@ -53,6 +53,7 @@ def build_lint_global_facts(docker_timeout: int, keep_container: bool, pytest_xm
     Args:
         docker_timeout (int): Timeout for Linters using docker.
         keep_container (bool): Whether to keep container for Linters running docker.
+        pytest_xml_output (str): Output path of pytest results if given.
         verbose (bool): Verbose, for debugging purposes.
 
     Returns:
