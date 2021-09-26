@@ -33,6 +33,8 @@ class PytestLinter(DockerBaseLinter):
         # No tests were collected.
         5: (LinterResult.SUCCESS, ' - Successfully finished - No tests were collected', 'red'),
     }
+    HAS_ERRORS = False
+    HAS_WARNINGS = False
     LINTER_NAME = 'Pytest'
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],

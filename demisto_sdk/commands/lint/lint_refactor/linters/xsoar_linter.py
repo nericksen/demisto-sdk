@@ -24,6 +24,8 @@ from demisto_sdk.commands.lint.resources.pylint_plugins.xsoar_level_checker impo
 
 
 class XSOARLinter(PythonBaseLinter):
+    HAS_ERRORS = False
+    HAS_WARNINGS = False
     LINTER_NAME = 'XSOAR Linter'
     # linters by support level
     SUPPORT_LEVEL_TO_CHECK_DICT: Dict[str, str] = {

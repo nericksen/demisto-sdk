@@ -26,6 +26,8 @@ class PylintLinter(DockerBaseLinter):
         # 32-usage error
         32: (LinterResult.RERUN, ' - Finished - Usage error', 'red')
     }
+    HAS_ERRORS = False
+    HAS_WARNINGS = False
     LINTER_NAME = 'Pylint'
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],

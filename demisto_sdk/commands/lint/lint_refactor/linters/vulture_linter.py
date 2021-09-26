@@ -10,6 +10,8 @@ from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_bas
 
 
 class VultureLinter(PythonBaseLinter):
+    HAS_ERRORS = False
+    HAS_WARNINGS = False
     LINTER_NAME = 'Vulture'
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],

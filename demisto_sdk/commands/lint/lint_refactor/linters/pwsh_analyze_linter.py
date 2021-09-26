@@ -20,6 +20,8 @@ class PowershellAnalyzeLinter(DockerBaseLinter):
         # 2-Error message issued
         2: (LinterResult.FAIL, ' - Finished errors found', 'red'),
     }
+    HAS_ERRORS = False
+    HAS_WARNINGS = False
     LINTER_NAME = 'Powershell Analyze'
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],

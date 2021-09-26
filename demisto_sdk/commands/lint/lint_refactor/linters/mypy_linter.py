@@ -10,6 +10,8 @@ from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_bas
 
 class MyPyLinter(PythonBaseLinter):
     LINTER_NAME = 'MyPy'
+    HAS_ERRORS = False
+    HAS_WARNINGS = False
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
                  lint_package_facts: LintPackageFacts):
