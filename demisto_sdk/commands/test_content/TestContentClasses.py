@@ -1084,10 +1084,7 @@ class Integration:
             'isIntegrationScript': self.configuration.is_byoi,  # type: ignore
             'name': instance_name,
             'passwordProtected': False,
-            'version': 0,
-            'incomingMapperId': configuration.get('defaultMapperIn', ''),
-            'mappingId': configuration.get('defaultClassifier', ''),
-            'outgoingMapperId': configuration.get('defaultMapperOut', '')
+            'version': 0
         }
 
         # set server keys
