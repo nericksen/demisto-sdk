@@ -11,8 +11,8 @@ from demisto_sdk.commands.common.content.objects.pack_objects.integration.integr
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.tools import get_pack_metadata
 from demisto_sdk.commands.common.tools import print_v, run_command_os
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult, XSOARLinterExitCode
-from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
@@ -24,8 +24,6 @@ from demisto_sdk.commands.lint.resources.pylint_plugins.xsoar_level_checker impo
 
 
 class XSOARLinter(PythonBaseLinter):
-    HAS_ERRORS = False
-    HAS_WARNINGS = False
     LINTER_NAME = 'XSOAR Linter'
     # linters by support level
     SUPPORT_LEVEL_TO_CHECK_DICT: Dict[str, str] = {
@@ -50,7 +48,7 @@ class XSOARLinter(PythonBaseLinter):
             super().should_run()
         ])
 
-    def run(self):
+    def run(self) -> None:
         """
         Overriding the BaseLinter `run` method because XSOAR Linter has specific use case for running
         - Adding Pylint plugin.
@@ -58,23 +56,23 @@ class XSOARLinter(PythonBaseLinter):
         Returns:
 
         """
-        status = LinterResult.SUCCESS
+        linter_result = LinterResult.SUCCESS
         with _pylint_plugin(self.package.path):
             log_prompt: str = f'{self.package.name()} - XSOAR Linter'
             click.secho(f'{log_prompt} - Start', fg='bright_cyan')
             stdout, stderr, exit_code = run_command_os(command=self.build_linter_command(),
                                                        cwd=self.cwd_for_linter, env=self.env)
             if exit_code & XSOARLinterExitCode.WARNING.value:
-                status = LinterResult.WARNING
+                linter_result = LinterResult.WARNING
                 click.secho(f'{log_prompt} - Finished: warnings found', fg='yellow')
 
             # If failure occurred, override status from warning to failure.
             if exit_code & XSOARLinterExitCode.PYLINT_FAILURE.value:
-                status = LinterResult.FAIL
+                linter_result = LinterResult.FAIL
                 click.secho(f'{log_prompt} - Finished: errors found', fg='red')
 
             if exit_code & XSOARLinterExitCode.FAIL.value:
-                status = LinterResult.FAIL
+                linter_result = LinterResult.FAIL
                 click.secho(f'{log_prompt} - Finished: errors found', fg='red')
                 print_v(f'{log_prompt} - Actual XSOAR Linter error\n', self.verbose)
                 stdout_verbose_suffix: str = f'\n{stdout}' if stdout else '\nNo STDOUT'
@@ -93,10 +91,10 @@ class XSOARLinter(PythonBaseLinter):
             if stderr:
                 print_v(f'{log_prompt} - Finished. STDOUT:\n{stderr}', self.verbose)
 
-            if status == LinterResult.SUCCESS:
+            if linter_result == LinterResult.SUCCESS:
                 click.secho(f'{log_prompt} - Successfully finished', fg='green')
 
-            return status, stdout
+            self.add_non_successful_package(linter_result, stdout)
 
     def build_linter_env(self) -> Dict:
         """

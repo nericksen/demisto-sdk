@@ -1,34 +1,50 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Dict
 
 
 class LinterResult(Enum):
     RERUN = 0
     FAIL = 1
     SUCCESS = 2
-    WARNING = 4
+    WARNING = 3
+    FAILED_CREATING_DOCKER_IMAGE = 4
 
 
 class XSOARLinterExitCode(Enum):
     SUCCESS = 0
     FAIL = 1
     PYLINT_FAILURE = 2
-    WARNING = 4
+    WARNING = 3
 
 
 @dataclass
 class UnsuccessfulPackageReport:
     package_name: str
     outputs: str
-    unit_tests: list = field(default_factory=list)
 
 
-class DockerImageTestReport:
-    def __init__(self, linter_result: LinterResult, unit_tests: Optional[List[Dict]] = None, errors: str = ''):
-        self.linter_result = linter_result
-        self.unit_tests = unit_tests
-        self.errors = errors
+@dataclass
+class UnsuccessfulImageReport:
+    package_name: str
+    outputs: str
+    image: str
 
-    def add_errors(self, errors: str):
-        self.errors = errors
+
+@dataclass
+class FailedImageCreation:
+    image: str
+    errors: str
+
+
+@dataclass
+class LintFlags:
+    disable_flake8: bool
+    disable_bandit: bool
+    disable_mypy: bool
+    disable_pylint: bool
+    disable_pytest: bool
+    disable_vulture: bool
+    disable_xsoar_linter: bool
+    disable_pwsh_analyze: bool
+    disable_pwsh_test: bool
+    no_coverage: bool

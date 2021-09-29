@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from textwrap import TextWrapper
 from typing import Union, Dict, Optional, List, Tuple
 
 import click
@@ -46,7 +47,8 @@ class BaseLinter:
     def is_expected_package(self, package_type: str):
         return self.package.script_type == package_type
 
-    def run(self) -> Tuple[LinterResult, str]:
+    def run(self) -> None:
+        linter_result, output = LinterResult.SUCCESS, ''
         log_prompt: str = f'{self.package.name()} - {self.linter_name}'
         click.secho(f'{log_prompt} - Start', fg='bright_cyan')
         stdout, stderr, exit_code = run_command_os(command=self.build_linter_command(),
@@ -59,13 +61,12 @@ class BaseLinter:
         if stderr or exit_code:
             click.secho(f'{log_prompt}- Finished errors found', fg='red')
             if stderr:
-                return LinterResult.FAIL, stderr
+                linter_result, output = LinterResult.FAIL, stderr
             else:
-                return LinterResult.FAIL, stdout
+                linter_result, output = LinterResult.FAIL, stdout
 
         click.secho(f'{log_prompt} - Successfully finished', fg='green')
-
-        return LinterResult.SUCCESS, ''
+        self.add_non_successful_package(linter_result, output)
 
     def add_non_successful_package(self, linter_result: LinterResult, outputs: str):
         class_ = self.__class__
@@ -126,13 +127,12 @@ class BaseLinter:
             return f'{self.linter_name} {" " * spacing}- {Colors.Fg.red}[FAIL]{Colors.reset}'
         else:
             return f'{self.linter_name} {" " * spacing}- {Colors.Fg.green}[PASS]{Colors.reset}'
-        #         TODO check this logic
-        #            elif check != 'image':
-        #                 print(f"{check_str} {' ' * spacing}- {Colors.Fg.cyan}[SKIPPED]{Colors.reset}")
 
     @classmethod
     def report_unsuccessful_lint_check(cls, linter_name: str):
         def _report_unsuccessful(unsuccessful_list: List[UnsuccessfulPackageReport], title_suffix: str, log_color: str):
+            if not unsuccessful_list:
+                return
             sentence = f'{linter_name} {title_suffix}'
             hash_tags: str = '#' * len(sentence)
             click.secho(f'\n{hash_tags}\n{sentence}\n{hash_tags}', fg=log_color)
@@ -142,4 +142,8 @@ class BaseLinter:
 
         _report_unsuccessful(cls.FAILED_PACKAGES, 'Errors', 'red')
         _report_unsuccessful(cls.WARNING_PACKAGES, 'Warnings', 'yellow')
-        # TODO add docker image failure logic too
+
+    @staticmethod
+    def create_text_wrapper(indent: int, wrapper_name: str, preferred_width: int = 100) -> TextWrapper:
+        prefix = f'{" " * indent}- {wrapper_name}'
+        return TextWrapper(initial_indent=prefix, width=preferred_width, subsequent_indent=' ' * len(prefix))

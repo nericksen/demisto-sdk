@@ -12,12 +12,10 @@ from demisto_sdk.commands.common.content.objects.pack_objects.integration.integr
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.logger import Colors
 from demisto_sdk.commands.common.tools import (print_v)
-from demisto_sdk.commands.lint.helpers import (EXIT_CODES)
 from demisto_sdk.commands.lint.lint_refactor.coverage_utils import coverage_report_editor
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult, PytestImageReport, \
-    UnsuccessfulPackageReport
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult, UnsuccessfulPackageReport
 from demisto_sdk.commands.lint.lint_refactor.lint_docker_utils import get_file_from_container
-from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.docker_base_linter import DockerBaseLinter
@@ -51,8 +49,6 @@ class PytestLinter(DockerBaseLinter):
         super().__init__(lint_flags.disable_pytest, lint_global_facts, package, self.LINTER_NAME, lint_package_facts,
                          self.DOCKER_EXIT_CODE_TO_LINTER_STATUS)
         self.report_coverage = not lint_flags.no_coverage
-        self.pytest_image_reports: List[PytestImageReport] = []
-        self.docker_image_to_unit_tests: Dict[str, List] = []
 
     def should_run(self) -> bool:
         return all([
@@ -116,8 +112,6 @@ class PytestLinter(DockerBaseLinter):
                 class_.WARNING_PACKAGES.append(UnsuccessfulPackageReport(self.package.name(), '\n'.join(warnings)))
             error_msg = '\n'.join(errors) + '\n'.join(other)
             if error_msg:
-                if self.package.name() in self.PACKAGES_FAILED_UNIT_TESTS:
-                    self.PACKAGES_FAILED_UNIT_TESTS[self.package.name()].append(PytestImageReport)
                 class_.FAILED_PACKAGES.append(UnsuccessfulPackageReport(self.package.name(), error_msg))
                 # TODO : in old linter, it does if errors else other. Why not take care of both anyway? check
 
@@ -140,19 +134,14 @@ class PytestLinter(DockerBaseLinter):
 
         return command
 
-    @staticmethod
-    def _create_text_wrapper(indent: int, wrapper_name: str, preferred_width: int = 100) -> TextWrapper:
-        prefix = f'{" " * indent}- {wrapper_name}'
-        return TextWrapper(initial_indent=prefix, width=preferred_width, subsequent_indent=' ' * len(prefix))
-
     @classmethod
     def _report_successful_packages(cls, verbose: bool):
         if not cls.SUCCESSFUL_UNIT_TESTS:
             return
         print_v(f"\n{Colors.Fg.green}Passed Unit-tests:{Colors.reset}", log_verbose=verbose)
-        wrapper_pack: TextWrapper = PytestLinter._create_text_wrapper(2, 'Package:')
-        wrapper_docker_image: TextWrapper = PytestLinter._create_text_wrapper(6, 'Docker:')
-        wrapper_test: TextWrapper = PytestLinter._create_text_wrapper(9, '')
+        wrapper_pack: TextWrapper = cls.create_text_wrapper(2, 'Package:')
+        wrapper_docker_image: TextWrapper = cls.create_text_wrapper(6, 'Docker:')
+        wrapper_test: TextWrapper = cls.create_text_wrapper(9, '')
         for package_name, image_to_tests_dict in cls.SUCCESSFUL_UNIT_TESTS.items():
             print_v(wrapper_pack.fill(f"{Colors.Fg.green}{package_name}{Colors.reset}"), log_verbose=verbose)
             for image, tests in image_to_tests_dict.items():
@@ -170,11 +159,11 @@ class PytestLinter(DockerBaseLinter):
     def _report_unsuccessful_packages(cls, verbose: bool):
         if not cls.FAILURE_UNIT_TESTS:
             return
-        wrapper_pack: TextWrapper = PytestLinter._create_text_wrapper(2, 'Package:')
-        wrapper_first_error: TextWrapper = PytestLinter._create_text_wrapper(9, 'Error:')
-        wrapper_sec_error: TextWrapper = PytestLinter._create_text_wrapper(9, '         ')
-        wrapper_docker_image: TextWrapper = PytestLinter._create_text_wrapper(6, 'Docker:')
-        wrapper_test: TextWrapper = PytestLinter._create_text_wrapper(9, '')
+        wrapper_pack: TextWrapper = cls.create_text_wrapper(2, 'Package:')
+        wrapper_first_error: TextWrapper = cls.create_text_wrapper(9, 'Error:')
+        wrapper_sec_error: TextWrapper = cls.create_text_wrapper(9, '         ')
+        wrapper_docker_image: TextWrapper = cls.create_text_wrapper(6, 'Docker:')
+        wrapper_test: TextWrapper = cls.create_text_wrapper(9, '')
         for package_name, image_to_tests_dict in cls.FAILURE_UNIT_TESTS.items():
             print_v(wrapper_pack.fill(f'{Colors.Fg.green}{package_name}{Colors.reset}'), log_verbose=verbose)
             for image, tests in image_to_tests_dict.items():

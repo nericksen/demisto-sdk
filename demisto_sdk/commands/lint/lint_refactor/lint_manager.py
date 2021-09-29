@@ -14,7 +14,7 @@ from demisto_sdk.commands.common.content.objects.pack_objects.integration.integr
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.logger import Colors
 from demisto_sdk.commands.common.tools import print_v, print_warning
-from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts, build_lint_global_facts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts, build_package_facts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
@@ -27,6 +27,7 @@ from demisto_sdk.commands.lint.lint_refactor.linters.pylint_linter import Pylint
 from demisto_sdk.commands.lint.lint_refactor.linters.pytest_linter import PytestLinter
 from demisto_sdk.commands.lint.lint_refactor.linters.vulture_linter import VultureLinter
 from demisto_sdk.commands.lint.lint_refactor.linters.xsoar_linter import XSOARLinter
+from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.docker_base_linter import DockerBaseLinter
 
 
 class LintManager:

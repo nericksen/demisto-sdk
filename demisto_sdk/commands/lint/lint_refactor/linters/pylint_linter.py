@@ -3,8 +3,8 @@ from typing import Tuple, Union, Dict
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult
-from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.docker_base_linter import DockerBaseLinter
@@ -26,8 +26,6 @@ class PylintLinter(DockerBaseLinter):
         # 32-usage error
         32: (LinterResult.RERUN, ' - Finished - Usage error', 'red')
     }
-    HAS_ERRORS = False
-    HAS_WARNINGS = False
     LINTER_NAME = 'Pylint'
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],

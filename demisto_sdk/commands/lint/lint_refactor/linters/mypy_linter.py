@@ -2,7 +2,7 @@ from typing import Union
 
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
-from demisto_sdk.commands.lint.lint_refactor.lint_flags import LintFlags
+from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
 from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
@@ -10,8 +10,6 @@ from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_bas
 
 class MyPyLinter(PythonBaseLinter):
     LINTER_NAME = 'MyPy'
-    HAS_ERRORS = False
-    HAS_WARNINGS = False
 
     def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
                  lint_package_facts: LintPackageFacts):
