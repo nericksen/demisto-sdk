@@ -52,7 +52,7 @@ class BaseLinter:
 
     def run(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> None:
         linter_result, output = LinterResult.SUCCESS, ''
-        cwd_for_linter: str = self.cwd_for_linter if self.cwd_for_linter else str(package.path)
+        cwd_for_linter: str = self.cwd_for_linter if self.cwd_for_linter else str(package.path.parent)
         log_prompt: str = f'{package.name} - {self.linter_name}'
         click.secho(f'{log_prompt} - Start', fg='bright_cyan')
         stdout, stderr, exit_code = run_command_os(command=self.build_linter_command(package, lint_package_facts),

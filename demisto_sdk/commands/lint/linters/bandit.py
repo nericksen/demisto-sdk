@@ -48,5 +48,4 @@ class BanditLinter(PythonBaseLinter):
         # Generating path patterns - path1,path2,path3,..
         files_list = [str(item) for item in lint_package_facts.lint_files]
         command += f" -r {','.join(files_list)}"
-
         return command
