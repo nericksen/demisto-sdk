@@ -42,7 +42,7 @@ from demisto_sdk.commands.format.update_pythonfile import PythonFileFormat
 from demisto_sdk.commands.format.update_report import ReportJSONFormat
 from demisto_sdk.commands.format.update_script import ScriptYMLFormat
 from demisto_sdk.commands.format.update_widget import WidgetJSONFormat
-from demisto_sdk.commands.lint.commands_builder import excluded_files
+from demisto_sdk.commands.lint.linters.abstract_linters.base_linter import BaseLinter
 
 FILE_TYPE_AND_LINKED_CLASS = {
     'integration': IntegrationYMLFormat,
@@ -137,7 +137,7 @@ def format_manager(input: str = None,
     log_list = []
     error_list: List[Tuple[int, int]] = []
     if files:
-        format_excluded_file = excluded_files + ['pack_metadata.json']
+        format_excluded_file = BaseLinter.EXCLUDED_FILES + ['pack_metadata.json']
         for file in files:
             file_path = file.replace('\\', '/')
             file_type = find_type(file_path)

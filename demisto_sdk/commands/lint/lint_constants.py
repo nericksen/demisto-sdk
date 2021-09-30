@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 from enum import Enum
+from textwrap import TextWrapper
+from typing import Optional
+
+import click
 
 
 class LinterResult(Enum):
@@ -48,3 +52,13 @@ class LintFlags:
     disable_pwsh_analyze: bool
     disable_pwsh_test: bool
     no_coverage: bool
+
+
+def print_title(sentence: str, log_color: Optional[str] = None) -> None:
+    hash_tags: str = '#' * len(sentence)
+    click.secho(f'{hash_tags}\n{sentence}\n{hash_tags}', fg=log_color)
+
+
+def create_text_wrapper(indent: int, wrapper_name: str, preferred_width: int = 100) -> TextWrapper:
+    prefix = f'{" " * indent}- {wrapper_name}'
+    return TextWrapper(initial_indent=prefix, width=preferred_width, subsequent_indent=' ' * len(prefix))

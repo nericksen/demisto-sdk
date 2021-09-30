@@ -3,11 +3,11 @@ from typing import Tuple, Union, Dict
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult
-from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
-from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.docker_base_linter import DockerBaseLinter
+from demisto_sdk.commands.lint.lint_constants import LintFlags
+from demisto_sdk.commands.lint.lint_constants import LinterResult
+from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
+from demisto_sdk.commands.lint.lint_package_facts import LintPackageFacts
+from demisto_sdk.commands.lint.linters.abstract_linters.docker_base_linter import DockerBaseLinter
 
 
 class PylintLinter(DockerBaseLinter):
@@ -28,19 +28,18 @@ class PylintLinter(DockerBaseLinter):
     }
     LINTER_NAME = 'Pylint'
 
-    def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_package_facts: LintPackageFacts):
-        super().__init__(lint_flags.disable_pylint, lint_global_facts, package, self.LINTER_NAME, lint_package_facts,
+    def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts):
+        super().__init__(lint_flags.disable_pylint, lint_global_facts, self.LINTER_NAME,
                          self.DOCKER_EXIT_CODE_TO_LINTER_STATUS)
 
-    def should_run(self) -> bool:
+    def should_run(self, package: Union[Script, Integration]) -> bool:
         return all([
-            self.is_expected_package(TYPE_PYTHON),
+            self.is_expected_package(package, TYPE_PYTHON),
             self.has_lint_files(),
-            super().should_run()
+            super().should_run(package)
         ])
 
-    def build_linter_command(self) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
         """"
         Build command to execute with pylint module https://docs.pylint.org/en/1.6.0/run.html#invoking-pylint.
         Args:
@@ -64,7 +63,7 @@ class PylintLinter(DockerBaseLinter):
         command += " --msg-template='{abspath}:{line}:{column}: {msg_id} {obj}: {msg}'"
         # List of members which are set dynamically and missed by pylint inference system, and so shouldn't trigger
         # E1101 when accessed.
-        command += " --generated-members=requests.packages.urllib3,requests.codes.ok"
+        command += ' --generated-members=requests.packages.urllib3,requests.codes.ok'
         # Generating path patterns - file1 file2 file3,..
-        command += " " + " ".join(self.lint_package_facts.lint_files)
+        command += ' ' + ' '.join(lint_package_facts.lint_files)
         return command

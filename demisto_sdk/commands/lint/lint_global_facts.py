@@ -39,11 +39,12 @@ class LintGlobalFacts:
     docker_timeout: int
     keep_container: bool
     pytest_xml_output: Optional[str]
+    coverage_report_dir: Optional[str]
     verbose: bool
 
 
 def build_lint_global_facts(docker_timeout: int, keep_container: bool, pytest_xml_output: Optional[str],
-                            verbose: bool) -> LintGlobalFacts:
+                            coverage_dir: Optional[str], verbose: bool) -> LintGlobalFacts:
     """
     Builds all the global facts needed for Lint command to be run, including:
     - Repository Lint is being run on.
@@ -54,6 +55,7 @@ def build_lint_global_facts(docker_timeout: int, keep_container: bool, pytest_xm
         docker_timeout (int): Timeout for Linters using docker.
         keep_container (bool): Whether to keep container for Linters running docker.
         pytest_xml_output (str): Output path of pytest results if given.
+        coverage_dir (Optional[str]): Path to directory to output coverage.
         verbose (bool): Verbose, for debugging purposes.
 
     Returns:
@@ -79,7 +81,8 @@ def build_lint_global_facts(docker_timeout: int, keep_container: bool, pytest_xm
         docker_timeout=docker_timeout,
         keep_container=keep_container,
         pytest_xml_output=pytest_xml_output,
-        verbose=verbose,
+        coverage_report_dir=coverage_dir,
+        verbose=verbose
     )
 
 

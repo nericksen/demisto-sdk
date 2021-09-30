@@ -2,26 +2,27 @@ from typing import Union
 
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
-from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
-from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.lint_constants import LintFlags
+from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
+from demisto_sdk.commands.lint.lint_package_facts import LintPackageFacts
+from demisto_sdk.commands.lint.linters.abstract_linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.json_output_formatters import BanditFormatter
 
 
 class BanditLinter(PythonBaseLinter):
     LINTER_NAME = 'Bandit'
 
-    def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_package_facts: LintPackageFacts):
-        super().__init__(lint_flags.disable_bandit, lint_global_facts, package, self.LINTER_NAME, lint_package_facts)
+    def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts):
+        super().__init__(lint_flags.disable_bandit, lint_global_facts, self.LINTER_NAME,
+                         json_output_formatter=BanditFormatter())
 
-    def should_run(self) -> bool:
+    def should_run(self, package: Union[Script, Integration]) -> bool:
         return all([
             self.has_lint_files(),
-            super().should_run()
+            super().should_run(package)
         ])
 
-    def build_linter_command(self) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
         """
         Build command for executing bandit lint check https://github.com/PyCQA/bandit.
         Returns:
@@ -45,7 +46,7 @@ class BanditLinter(PythonBaseLinter):
         command += " --format custom --msg-template '{abspath}:{line}: {test_id} " \
                    "[Severity: {severity} Confidence: {confidence}] {msg}'"
         # Generating path patterns - path1,path2,path3,..
-        files_list = [str(item) for item in ['TODO']]
+        files_list = [str(item) for item in lint_package_facts.lint_files]
         command += f" -r {','.join(files_list)}"
 
         return command

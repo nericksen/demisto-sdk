@@ -11,11 +11,12 @@ from demisto_sdk.commands.common.content.objects.pack_objects.integration.integr
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.tools import get_pack_metadata
 from demisto_sdk.commands.common.tools import print_v, run_command_os
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LintFlags
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult, XSOARLinterExitCode
-from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
-from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.python_base_linter import PythonBaseLinter
+from demisto_sdk.commands.lint.json_output_formatters import XSOARFormatter
+from demisto_sdk.commands.lint.lint_constants import LintFlags
+from demisto_sdk.commands.lint.lint_constants import LinterResult, XSOARLinterExitCode
+from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
+from demisto_sdk.commands.lint.lint_package_facts import LintPackageFacts
+from demisto_sdk.commands.lint.linters.abstract_linters.python_base_linter import PythonBaseLinter
 from demisto_sdk.commands.lint.resources.pylint_plugins.base_checker import base_msg
 from demisto_sdk.commands.lint.resources.pylint_plugins.certified_partner_level_checker import cert_partner_msg
 from demisto_sdk.commands.lint.resources.pylint_plugins.community_level_checker import community_msg
@@ -36,19 +37,17 @@ class XSOARLinter(PythonBaseLinter):
                  'xsoar_level_checker'
     }
 
-    def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_package_facts: LintPackageFacts):
-        env = self.build_linter_env()
-        super().__init__(lint_flags.disable_flake8, lint_global_facts, package, self.LINTER_NAME, lint_package_facts,
-                         env=env)
+    def __init__(self, lint_flags: LintFlags, lint_global_facts: LintGlobalFacts):
+        super().__init__(lint_flags.disable_flake8, lint_global_facts, self.LINTER_NAME,
+                         json_output_formatter=XSOARFormatter())
 
-    def should_run(self) -> bool:
+    def should_run(self, package: Union[Script, Integration]) -> bool:
         return all([
             self.has_lint_files(),
-            super().should_run()
+            super().should_run(package)
         ])
 
-    def run(self) -> None:
+    def run(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> None:
         """
         Overriding the BaseLinter `run` method because XSOAR Linter has specific use case for running
         - Adding Pylint plugin.
@@ -57,11 +56,12 @@ class XSOARLinter(PythonBaseLinter):
 
         """
         linter_result = LinterResult.SUCCESS
-        with _pylint_plugin(self.package.path):
-            log_prompt: str = f'{self.package.name()} - XSOAR Linter'
+        env = self.build_linter_env(package, lint_package_facts.images)
+        with _pylint_plugin(package.path):
+            log_prompt: str = f'{package.name} - XSOAR Linter'
             click.secho(f'{log_prompt} - Start', fg='bright_cyan')
-            stdout, stderr, exit_code = run_command_os(command=self.build_linter_command(),
-                                                       cwd=self.cwd_for_linter, env=self.env)
+            stdout, stderr, exit_code = run_command_os(command=self.build_linter_command(package, lint_package_facts),
+                                                       cwd=self.cwd_for_linter, env=env)
             if exit_code & XSOARLinterExitCode.WARNING.value:
                 linter_result = LinterResult.WARNING
                 click.secho(f'{log_prompt} - Finished: warnings found', fg='yellow')
@@ -94,47 +94,51 @@ class XSOARLinter(PythonBaseLinter):
             if linter_result == LinterResult.SUCCESS:
                 click.secho(f'{log_prompt} - Successfully finished', fg='green')
 
-            self.add_non_successful_package(linter_result, stdout)
+            self.add_non_successful_package(package.name, linter_result, stdout)
 
-    def build_linter_env(self) -> Dict:
+    def build_linter_env(self, package: Union[Script, Integration], images: List[str]) -> Dict:
         """
         Builds the environment for running the XSOAR Linter.
         As Xsoar checker is a pylint plugin and runs as part of pylint code, we can not pass args to it.
         As a result we can use the env vars as a gateway.
+        Args:
+            package (Union[Script, Integration]): Package to build env for.
+            images (List[str]): List of the package images.
         Returns:
             (Dict): The environment, enriched with needed env vars for running XSOAR Linter.
         """
         my_env: Dict = os.environ.copy()
 
-        python_version = self.get_python_version()
+        python_version = self.get_python_version(package.script_type, images)
         if 'PYTHONPATH' in my_env:
-            my_env['PYTHONPATH'] += ':' + str(self.package.path)
+            my_env['PYTHONPATH'] += ':' + str(package.path)
         else:
-            my_env['PYTHONPATH'] = str(self.package.path)
+            my_env['PYTHONPATH'] = str(package.path)
 
-        if self.package.script.get('longRunning'):
+        if package.script.get('longRunning'):
             my_env['LONGRUNNING'] = 'True'
 
         if python_version < 3:
             my_env['PY2'] = 'True'
 
-        my_env['is_script'] = str(os.path.basename(os.path.dirname(self.package.path)) == SCRIPTS_DIR)
+        my_env['is_script'] = str(os.path.basename(os.path.dirname(package.path)) == SCRIPTS_DIR)
 
-        commands_dict: Dict = self.package.script.get('commands', {})
+        commands_dict: Dict = package.script.get('commands', {})
         commands_names: List[str] = [command.get('name') for command in commands_dict if 'name' in command]
         my_env['commands'] = ','.join(commands_names) if commands_names else ''
 
-        my_env['runas'] = self.package.script.get('runas', '')
+        my_env['runas'] = package.script.get('runas', '')
 
         return my_env
 
-    def build_linter_command(self) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
         """
         Build command to execute with XSOAR Linter.
         Returns:
            (str): XSOAR Linter command using pylint load plugins.
         """
-        support_level: str = get_pack_metadata(str(self.package.path)).get('support_level', 'base')
+        python_version: float = self.get_python_version(package.script_type, lint_package_facts.images)
+        support_level: str = get_pack_metadata(str(package.path)).get('support_level', 'base')
 
         # messages from all level linters
         check_to_xsoar_msg: Dict[str, Dict] = {'base_checker': base_msg, 'community_level_checker': community_msg,
@@ -153,7 +157,7 @@ class XSOARLinter(PythonBaseLinter):
                 for msg in checker_msgs_list:
                     message_enable += f'{msg},'
 
-        command = f'{self.get_python_exec(is_py2=True)} -m pylint'
+        command = f'{self.get_python_exec(python_version, is_py2=True)} -m pylint'
         # Excluded files
         command += f" --ignore={','.join(self.EXCLUDED_FILES)}"
         # Disable all errors
@@ -166,7 +170,7 @@ class XSOARLinter(PythonBaseLinter):
         if checker_path:
             command += f' --load-plugins {checker_path}'
         # Generating path patterns - file1 file2 file3,..
-        command += ' ' + ' '.join(self.lint_package_facts.lint_files)
+        command += ' ' + ' '.join(lint_package_facts.lint_files)
         return command
 
 

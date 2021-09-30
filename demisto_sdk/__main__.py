@@ -638,38 +638,38 @@ def lint(**kwargs):
         Will lookup up what docker image to use and will setup the dev dependencies and file in the target folder.
         If no additional flags specifying the packs are given,will lint only changed files.
     """
-    logging_setup(verbose=kwargs.get('verbose'),  # type: ignore[arg-type]
-                  quiet=kwargs.get('quiet'),  # type: ignore[arg-type]
-                  log_path=kwargs.get('log_path'))  # type: ignore[arg-type]
+    # logging_setup(verbose=kwargs.get('verbose'),  # type: # ignore[arg-type]
+    #               quiet=kwargs.get('quiet'),  # type: # ignore[arg-type]
+    #               log_path=kwargs.get('log_path'))  # type: # ignore[arg-type]
 
     check_configuration_file('lint', kwargs)
-    lint_manager = LintManager(
-        input=kwargs.get('input'),  # type: ignore[arg-type]
-        git=kwargs.get('git'),  # type: ignore[arg-type]
-        all_packs=kwargs.get('all_packs'),  # type: ignore[arg-type]
-        verbose=kwargs.get('verbose'),  # type: ignore[arg-type]
-        quiet=kwargs.get('quiet'),  # type: ignore[arg-type]
-        prev_ver=kwargs.get('prev_ver'),  # type: ignore[arg-type]
-        json_file_path=kwargs.get('json_file')  # type: ignore[arg-type]
+    lint_manager: LintManager = LintManager(
+        input_dirs=kwargs.get('input'),
+        git_only=kwargs.get('git'),
+        all_packs=kwargs.get('all_packs'),
+        quiet=kwargs.get('quiet'),
+        verbose=kwargs.get('verbose'),
+        prev_ver=kwargs.get('prev_ver'),
+        docker_timeout=kwargs.get('docker_timeout'),
+        parallel=kwargs.get('parallel'),
+        keep_container=kwargs.get('keep_container'),
+        no_flake8=kwargs.get('no_flake8'),
+        no_bandit=kwargs.get('no_bandit'),
+        no_mypy=kwargs.get('no_mypy'),
+        no_pylint=kwargs.get('no_pylint'),
+        no_vulture=kwargs.get('no_vulture'),
+        no_xsoar_linter=kwargs.get('no_xsoar_linter'),
+        no_pwsh_analyze=kwargs.get('no_pwsh_analyze'),
+        no_pwsh_test=kwargs.get('no_pwsh_test'),
+        no_pytest=kwargs.get('no_test'),
+        test_xml=kwargs.get('test_xml'),
+        no_coverage=kwargs.get('no_coverage'),
+        coverage_report_dir=kwargs.get('coverage_report'),
+        json_file_path=kwargs.get('json_file')
     )
-    return lint_manager.run_dev_packages(
-        parallel=kwargs.get('parallel'),  # type: ignore[arg-type]
-        no_flake8=kwargs.get('no_flake8'),  # type: ignore[arg-type]
-        no_bandit=kwargs.get('no_bandit'),  # type: ignore[arg-type]
-        no_mypy=kwargs.get('no_mypy'),  # type: ignore[arg-type]
-        no_vulture=kwargs.get('no_vulture'),  # type: ignore[arg-type]
-        no_xsoar_linter=kwargs.get('no_xsoar_linter'),  # type: ignore[arg-type]
-        no_pylint=kwargs.get('no_pylint'),  # type: ignore[arg-type]
-        no_test=kwargs.get('no_test'),  # type: ignore[arg-type]
-        no_pwsh_analyze=kwargs.get('no_pwsh_analyze'),  # type: ignore[arg-type]
-        no_pwsh_test=kwargs.get('no_pwsh_test'),  # type: ignore[arg-type]
-        keep_container=kwargs.get('keep_container'),  # type: ignore[arg-type]
-        test_xml=kwargs.get('test_xml'),  # type: ignore[arg-type]
-        failure_report=kwargs.get('failure_report'),  # type: ignore[arg-type]
-        no_coverage=kwargs.get('no_coverage'),  # type: ignore[arg-type]
-        coverage_report=kwargs.get('coverage_report'),  # type: ignore[arg-type]
-        docker_timeout=kwargs.get('docker_timeout'),  # type: ignore[arg-type]
-    )
+    lint_manager.run_dev_packages()
+    # TODO add
+    #     failure_report=kwargs.get('failure_report'),  # type: ignore[arg-type]
 
 
 # ====================== format ====================== #
@@ -1012,6 +1012,7 @@ def generate_test_playbook(**kwargs):
     except PlaybookTestsGenerator.InvalidOutputPathError as e:
         print_error(str(e))
         return 1
+
 
 # ====================== init ====================== #
 
@@ -1795,6 +1796,7 @@ def error_code(config, **kwargs):
 @main.resultcallback()
 def exit_from_program(result=0, **kwargs):
     sys.exit(result)
+
 
 # todo: add download from demisto command
 

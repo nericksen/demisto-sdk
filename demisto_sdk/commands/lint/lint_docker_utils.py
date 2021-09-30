@@ -4,7 +4,7 @@ import shlex
 import tarfile
 from functools import lru_cache
 from pathlib import Path
-from typing import Union
+from typing import Union, Generator
 
 import docker
 import docker.errors
@@ -12,6 +12,8 @@ import docker.errors
 from docker.models.containers import Container
 
 from demisto_sdk.commands.common.tools import print_warning
+from textwrap import TextWrapper
+import click
 
 
 def get_file_from_container(container_obj: Container, container_path: str, encoding: str = "") -> Union[str, bytes]:
@@ -96,3 +98,17 @@ def get_python_version_from_image(image: str, timeout: int = 60, log_prompt: str
             continue
 
     return py_num
+
+
+def stream_docker_container_output(streamer: Generator) -> None:
+    """ Stream container logs
+
+    Args:
+        streamer(Generator): Generator created by docker-sdk
+    """
+    try:
+        wrapper = TextWrapper(initial_indent='\t', subsequent_indent='\t', width=150)
+        for chunk in streamer:
+            click.secho(wrapper.fill(str(chunk.decode('utf-8'))))
+    except Exception:
+        pass

@@ -5,7 +5,7 @@ import platform
 import time
 from abc import abstractmethod
 from textwrap import TextWrapper
-from typing import Tuple, Union, List, Dict
+from typing import Tuple, Union, List, Dict, Optional
 
 import click
 import docker
@@ -20,13 +20,15 @@ from demisto_sdk.commands.common.content.objects.pack_objects.integration.integr
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.common.logger import Colors
 from demisto_sdk.commands.common.tools import print_warning, print_v
-from demisto_sdk.commands.lint.helpers import stream_docker_container_output
-from demisto_sdk.commands.lint.lint_refactor.lint_constants import LinterResult, UnsuccessfulImageReport, \
+from demisto_sdk.commands.lint.lint_docker_utils import stream_docker_container_output
+from demisto_sdk.commands.lint.lint_constants import LinterResult, UnsuccessfulImageReport, \
     FailedImageCreation
-from demisto_sdk.commands.lint.lint_refactor.lint_docker_utils import get_python_version_from_image
-from demisto_sdk.commands.lint.lint_refactor.lint_global_facts import LintGlobalFacts
-from demisto_sdk.commands.lint.lint_refactor.lint_package_facts import LintPackageFacts
-from demisto_sdk.commands.lint.lint_refactor.linters.abstract_linters.base_linter import BaseLinter
+from demisto_sdk.commands.lint.lint_docker_utils import get_python_version_from_image
+from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
+from demisto_sdk.commands.lint.lint_constants import create_text_wrapper, print_title
+from demisto_sdk.commands.lint.lint_package_facts import LintPackageFacts
+from demisto_sdk.commands.lint.linters.abstract_linters.base_linter import BaseLinter
+from demisto_sdk.commands.lint.json_output_formatters import Formatter
 
 
 class DockerBaseLinter(BaseLinter):
@@ -35,16 +37,16 @@ class DockerBaseLinter(BaseLinter):
     FAILED_IMAGE_TESTS: Dict[str, List[UnsuccessfulImageReport]] = {}
     WARNING_IMAGE_TESTS: Dict[str, List[UnsuccessfulImageReport]] = {}
 
-    def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                 lint_name: str, lint_package_facts: LintPackageFacts,
-                 docker_exit_code_to_linter_results: Dict[int, Tuple[LinterResult, str, str]], env=os.environ):
-        super().__init__(disable_flag, lint_global_facts, package, lint_name, lint_package_facts, env)
+    def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, lint_name: str,
+                 docker_exit_code_to_linter_results: Dict[int, Tuple[LinterResult, str, str]],
+                 json_output_formatter: Optional[Formatter] = None):
+        super().__init__(disable_flag, lint_global_facts, lint_name, json_output_formatter=json_output_formatter)
         self._docker_client: docker.DockerClient = docker.from_env(timeout=lint_global_facts.docker_timeout)
         self._docker_hub_login = self._docker_login()
         self.docker_exit_code_to_linter_results = docker_exit_code_to_linter_results
 
     @abstractmethod
-    def build_linter_command(self) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
         pass
 
     def _docker_login(self) -> bool:
@@ -66,10 +68,11 @@ class DockerBaseLinter(BaseLinter):
         except docker.errors.APIError:
             return False
 
-    def run_on_image(self, test_image: str) -> Tuple:
-        log_prompt = f'{self.package.name()} - {self.linter_name} - Image {test_image}'
+    def run_on_image(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                     test_image: str) -> Tuple:
+        log_prompt = f'{package.name} - {self.linter_name} - Image {test_image}'
         click.secho(f'{log_prompt} - Start')
-        container_name = f'{self.package.name()}-{self.linter_name}'
+        container_name = f'{package.name}-{self.linter_name}'
         # Check if previous run left container a live if it do, we remove it
         self._docker_remove_container(container_name)
 
@@ -84,10 +87,10 @@ class DockerBaseLinter(BaseLinter):
             container_obj: docker.models.containers.Container = self._docker_client.containers.run(
                 name=container_name,
                 image=test_image,
-                command=[self.build_linter_command()],
+                command=[self.build_linter_command(package, lint_package_facts)],
                 user=f'{uid}:4000',
                 detach=True,
-                environment=self.lint_package_facts.env_vars
+                environment=lint_package_facts.env_vars
             )
             stream_docker_container_output(container_obj.logs(stream=True))
             # wait for container to finish
@@ -96,7 +99,8 @@ class DockerBaseLinter(BaseLinter):
             container_exit_code = container_status.get('StatusCode')
             click.secho(f'{log_prompt} - exit-code: {container_exit_code}')
 
-            linter_result: LinterResult = self.process_docker_results(container_obj, container_exit_code, test_image)
+            linter_result: LinterResult = self.process_docker_results(package.name, container_obj,
+                                                                      container_exit_code, test_image)
             # Collect container logs on FAIL
             if linter_result == LinterResult.FAIL:
                 output = container_obj.logs().decode('utf-8')
@@ -116,47 +120,51 @@ class DockerBaseLinter(BaseLinter):
 
         return exit_code, output
 
-    def process_docker_results(self, container_obj, container_exit_code, test_image: str) -> LinterResult:
-        log_prompt: str = f'{self.package.name()} - {self.linter_name} - Image {test_image}'
+    def process_docker_results(self, package_name: str, container_obj, container_exit_code,
+                               test_image: str) -> LinterResult:
+        log_prompt: str = f'{package_name} - {self.linter_name} - Image {test_image}'
         linter_result, log_prompt_suffix, log_color = self.docker_exit_code_to_linter_results.get(
             container_exit_code, (LinterResult.SUCCESS, ' - Successfully finished', 'green'))
         click.secho(f'{log_prompt}{log_prompt_suffix}', fg=log_color)
         return linter_result
 
-    def run(self) -> None:
-        for test_image in self.lint_package_facts.images:
+    def run(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> None:
+        for test_image in lint_package_facts.images:
             linter_result, output = LinterResult.SUCCESS, ''
             image_id, errors = '', None
+
             for trial in range(2):
-                image_id, errors = self._docker_image_create(test_image)
-                if errors:
-                    # TODO handle max retries
-                    continue
+                image_id, errors = self._docker_image_create(package, test_image)
+                if not errors:
+                    break
+
             if image_id and not errors:
                 for trial in range(2):
-                    linter_result, output = self.run_on_image(image_id)
+                    linter_result, output = self.run_on_image(package, lint_package_facts, image_id)
                     if linter_result in [LinterResult.FAIL, LinterResult.SUCCESS]:
                         break
                     if linter_result == LinterResult.RERUN and trial == 1:
                         linter_result, output = LinterResult.FAIL, output
             # Error occurred building image
             else:
-                failed_images: List[FailedImageCreation] = DockerBaseLinter.FAILED_IMAGE_CREATIONS[self.package.name()]
+                failed_images: List[FailedImageCreation] = DockerBaseLinter.FAILED_IMAGE_CREATIONS[package.name]
                 failed_images.append(FailedImageCreation(test_image, errors))
-                DockerBaseLinter.FAILED_IMAGE_CREATIONS[self.package.name()] = failed_images
-            self.add_non_successful_package(linter_result, output)
+                DockerBaseLinter.FAILED_IMAGE_CREATIONS[package.name] = failed_images
+            self.add_non_successful_package(package.name, linter_result, output)
 
-    def should_run(self) -> bool:
+    def should_run(self, package: Union[Script, Integration]) -> bool:
         return all([
             self.has_docker_engine(),
-            super().should_run()
+            self.linter_is_not_disabled()
         ])
 
-    def add_docker_image_results(self, linter_result: LinterResult, errors: str, test_image: str) -> None:
+    def add_docker_image_results(self, package_name: str, linter_result: LinterResult, errors: str,
+                                 test_image: str) -> None:
         if linter_result == LinterResult.FAILED_CREATING_DOCKER_IMAGE:
-            DockerBaseLinter.FAILED_IMAGE_CREATIONS[self.package.name()][test_image] = errors
+            failing_image_creation_list = DockerBaseLinter.FAILED_IMAGE_CREATIONS[package_name]
+            failing_image_creation_list.append(FailedImageCreation(test_image, errors))
+            DockerBaseLinter.FAILED_IMAGE_CREATIONS[package_name] = failing_image_creation_list
         class_ = self.__class__
-        package_name: str = self.package.name()
         if linter_result in [LinterResult.WARNING, LinterResult.FAIL]:
             errors, warnings, other = self.split_warnings_errors(errors)
             if warnings:
@@ -206,7 +214,7 @@ class DockerBaseLinter(BaseLinter):
             print_warning(f'Image: {docker_image} has unexpected python number - {python_number_from_image}')
         return requirements
 
-    def _docker_image_create(self, docker_image: str) -> Tuple[str, str]:
+    def _docker_image_create(self, package: Union[Script, Integration], docker_image: str) -> Tuple[str, str]:
         """ Create docker image:
             1. Installing 'build base' if required in alpine images version - https://wiki.alpinelinux.org/wiki/GCC
             2. Installing pypi packs - if only pylint required - only pylint installed otherwise all pytest and pylint
@@ -215,12 +223,13 @@ class DockerBaseLinter(BaseLinter):
                 demisto_sdk/commands/lint/templates/dockerfile.jinja2
 
         Args:
+            package (Union[Script, Integration]): Package to create docker image for.
             docker_image (str): docker image to use as base for installing dev dependencies and python version.
 
         Returns:
             str, str. image name to use and errors string.
         """
-        log_prompt = f'{self.package.name()} - Image create'
+        log_prompt = f'{package.name} - Image create'
         test_image_id = ''
 
         requirements: List[str] = self._get_requirements(docker_image)
@@ -229,9 +238,8 @@ class DockerBaseLinter(BaseLinter):
         env = Environment(loader=file_loader, lstrip_blocks=True, trim_blocks=True, autoescape=True)
         template = env.get_template('dockerfile.jinja2')
         try:
-            # TODO - maybe add test requirements, was removed, see if needed
             dockerfile = template.render(image=docker_image, pypi_packs=requirements,
-                                         pack_type=self.package.script_type, copy_pack=False)
+                                         pack_type=package.script_type, copy_pack=False)
         except exceptions.TemplateError as e:
             print_v(f'{log_prompt} - Error when build image - {e.message()}', self.lint_global_facts.verbose)
             return test_image_id, str(e)
@@ -240,8 +248,7 @@ class DockerBaseLinter(BaseLinter):
         test_image_name = f'devtest{docker_image}-{hashlib.md5(dockerfile.encode("utf-8")).hexdigest()}'
         test_image = None
         try:
-            # TODO color
-            click.secho(f'{log_prompt} - Trying to pull existing image {test_image_name}', fg='green')
+            click.secho(f'{log_prompt} - Trying to pull existing image {test_image_name}')
             test_image = self._docker_client.images.pull(test_image_name)
         except (docker.errors.APIError, docker.errors.ImageNotFound):
             click.secho(f"{log_prompt} - Unable to find image {test_image_name}")
@@ -254,7 +261,9 @@ class DockerBaseLinter(BaseLinter):
                 errors = str(e)
         else:
             click.secho(f"{log_prompt} - Found existing image {test_image_name}")
-        self.build_docker(log_prompt, test_image_name, template)
+        build_errors: Optional[str] = self.build_docker(package.path, log_prompt, test_image_name, template)
+        if build_errors:
+            errors = build_errors
         if test_image_id:
             click.secho(f"{log_prompt} - Image {test_image_id} created successfully")
 
@@ -276,8 +285,9 @@ class DockerBaseLinter(BaseLinter):
                             requests.exceptions.ReadTimeout):
                         click.secho(f'{log_prompt} - Unable to push image {test_image_name} to repository')
 
-    def build_docker(self, log_prompt: str, test_image_name: str, template):
-        dockerfile_path = Path(self.package.path / '.Dockerfile')
+    def build_docker(self, package_path: Path, log_prompt: str, test_image_name: str, template) -> Optional[str]:
+        errors: Optional[str] = None
+        dockerfile_path = Path(package_path / '.Dockerfile')
         dockerfile = template.render(image=test_image_name, copy_pack=True)
         with open(dockerfile_path, mode="w+") as file:
             file.write(str(dockerfile))
@@ -300,35 +310,31 @@ class DockerBaseLinter(BaseLinter):
                     time.sleep(2)
         if dockerfile_path.exists():
             dockerfile_path.unlink()
+        return errors
 
-    @classmethod
-    def report_unsuccessful_lint_check(cls, linter_name: str):
+    def report_unsuccessful_lint_check(self):
         def _report_unsuccessful(image_results: Dict[str, List[UnsuccessfulImageReport]],
                                  title_suffix: str, log_color: str):
             if not image_results:
                 return
-            sentence = f'{linter_name} {title_suffix}'
-            hash_tags: str = '#' * len(sentence)
-            click.secho(f'\n{hash_tags}\n{sentence}\n{hash_tags}', fg=log_color)
+            print_title(f'{self.linter_name} {title_suffix}', log_color=log_color)
             for package_name, image_reports in image_results.items():
                 click.secho(f'{package_name}', fg='red')
                 for unsuccessful_report in image_reports:
                     click.secho(f'Image - {unsuccessful_report.image}:\n{title_suffix}:\n{unsuccessful_report.outputs}')
 
-        _report_unsuccessful(cls.FAILED_IMAGE_TESTS, 'Errors', 'red')
-        _report_unsuccessful(cls.WARNING_IMAGE_TESTS, 'Warnings', 'yellow')
+        _report_unsuccessful(self.FAILED_IMAGE_TESTS, 'Errors', 'red')
+        _report_unsuccessful(self.WARNING_IMAGE_TESTS, 'Warnings', 'yellow')
 
     @staticmethod
     def report_unsuccessful_image_creations() -> None:
         if not DockerBaseLinter.FAILED_IMAGE_CREATIONS:
             return
         # Indentation config
-        wrapper_pack: TextWrapper = BaseLinter.create_text_wrapper(2, 'Package:')
-        wrapper_image: TextWrapper = BaseLinter.create_text_wrapper(2, 'Image:')
-        wrapper_error: TextWrapper = BaseLinter.create_text_wrapper(4, 'Error:')
-        sentence = " Image Creation Errors "
-        hash_tags: str = '#' * len(sentence)
-        click.secho(f'{hash_tags}\n{sentence}\n{hash_tags}', fg='red')
+        wrapper_pack: TextWrapper = create_text_wrapper(2, 'Package:')
+        wrapper_image: TextWrapper = create_text_wrapper(2, 'Image:')
+        wrapper_error: TextWrapper = create_text_wrapper(4, 'Error:')
+        print_title(' Image Creation Errors ', log_color='red')
         for package_name, failed_creations in DockerBaseLinter.FAILED_IMAGE_CREATIONS.items():
             click.secho(wrapper_pack.fill(f'{Colors.Fg.cyan}{package_name}{Colors.reset}'))
             for failed_image_creation in failed_creations:

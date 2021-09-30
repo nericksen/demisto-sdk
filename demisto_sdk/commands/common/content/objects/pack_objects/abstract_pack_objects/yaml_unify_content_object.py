@@ -60,13 +60,11 @@ class YAMLContentUnifiedObject(YAMLContentObject):
         return script
 
     @property
-    def unit_test_file(self) -> Optional[Path]:
-        patterns = [f'{self.path.stem}_test.py']
-        return next(self._path.parent.glob(patterns=patterns), None)
-
     def name(self) -> str:
-        # TODO tom
-        pass
+        if self._content_type == FileType.INTEGRATION:
+            return self.get('display')
+        else:
+            return self.get('name')
 
     @property
     def docker_image(self) -> str:
