@@ -73,8 +73,8 @@ class PytestLinter(DockerBaseLinter):
         linter_result: LinterResult = super().process_docker_results(package.name, container_obj, container_exit_code,
                                                                      test_image)
         if container_exit_code in self.CONTAINER_EXIT_CODE_FOR_COVERAGE_AND_TEST_FILE:
-            self.handle_test_xml_file(package.path, container_obj)
-            self.handle_coverage(package.path, container_obj)
+            self.handle_test_xml_file(package.path.parent, container_obj)
+            self.handle_coverage(package.path.parent, container_obj)
         # Save test reports
         test_json = json.loads(get_file_from_container(container_obj=container_obj,
                                                        container_path="/devwork/report_pytest.json",
@@ -133,7 +133,7 @@ class PytestLinter(DockerBaseLinter):
             command += " --json=/devwork/report_pytest.json"
 
         if self.report_coverage:
-            command += f' --cov-report= --cov={package.path}'
+            command += f' --cov-report= --cov={package.path.parent}'
 
         return command
 

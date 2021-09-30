@@ -152,7 +152,7 @@ class LintManager:
         Returns:
             List[Path]: A list of names of packages that should run.
         """
-        packages_paths: List[Path] = [package.path for package in packages]
+        packages_paths: List[Path] = [package.path.parent for package in packages]
         print_v(
             f'Comparing to {Colors.Fg.cyan}{content_repo.remote()}/{base_branch}{Colors.reset} using'
             f' branch {Colors.Fg.cyan} {content_repo.active_branch}{Colors.reset}', log_verbose=self._verbose)
@@ -168,7 +168,7 @@ class LintManager:
         all_changed = staged_files.union(changed_from_base)
         packages_to_check_path: Set[str] = all_changed.intersection(packages_paths)
         packages_filtered: List[Union[Script, Integration]] = [package for package in packages if
-                                                               package.path in packages_to_check_path]
+                                                               package.path.parent in packages_to_check_path]
         for pkg in packages_filtered:
             print_v(f"Found changed package {Colors.Fg.cyan}{pkg}{Colors.reset}", log_verbose=self._verbose)
         return packages_filtered
@@ -261,7 +261,7 @@ class LintManager:
         click.secho(f'Packages: {all_packages_count}')
         click.secho(f'Packages PASS: {all_packages_count - len(failed_packages)}', fg='green')
         click.secho(f'Packages FAIL: {len(failed_packages)}', fg='red')
-        click.secho(f'Packages WARNINGS (can either PASS or FAIL): {len(warning_packages)}', fg='orange')
+        click.secho(f'Packages WARNINGS (can either PASS or FAIL): {len(warning_packages)}', fg='yellow')
         if not self._all_packs:
             _print_unsuccessful_list(warning_packages, 'Warning Packages: ', 'yellow')
         _print_unsuccessful_list(failed_packages, 'Failed Packages:', 'red')

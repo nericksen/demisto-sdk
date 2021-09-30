@@ -36,7 +36,7 @@ class VultureLinter(PythonBaseLinter):
         # File to be excluded when performing lints check
         command += f" --exclude={','.join(self.EXCLUDED_FILES)}"
         # Whitelist vulture
-        whitelist = package.path / '.vulture_whitelist.py'
+        whitelist = package.path.parent / '.vulture_whitelist.py'
         if whitelist.exists():
             command += f' {whitelist}'
         command += ' ' + ' '.join(lint_package_facts.lint_files)

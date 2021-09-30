@@ -57,7 +57,7 @@ class XSOARLinter(PythonBaseLinter):
         """
         linter_result = LinterResult.SUCCESS
         env = self.build_linter_env(package, lint_package_facts.images)
-        with _pylint_plugin(package.path):
+        with _pylint_plugin(package.path.parent):
             log_prompt: str = f'{package.name} - XSOAR Linter'
             click.secho(f'{log_prompt} - Start', fg='bright_cyan')
             stdout, stderr, exit_code = run_command_os(command=self.build_linter_command(package, lint_package_facts),
@@ -111,9 +111,9 @@ class XSOARLinter(PythonBaseLinter):
 
         python_version = self.get_python_version(package.script_type, images)
         if 'PYTHONPATH' in my_env:
-            my_env['PYTHONPATH'] += ':' + str(package.path)
+            my_env['PYTHONPATH'] += ':' + str(package.path.parent)
         else:
-            my_env['PYTHONPATH'] = str(package.path)
+            my_env['PYTHONPATH'] = str(package.path.parent)
 
         if package.script.get('longRunning'):
             my_env['LONGRUNNING'] = 'True'
@@ -121,7 +121,7 @@ class XSOARLinter(PythonBaseLinter):
         if python_version < 3:
             my_env['PY2'] = 'True'
 
-        my_env['is_script'] = str(os.path.basename(os.path.dirname(package.path)) == SCRIPTS_DIR)
+        my_env['is_script'] = str(os.path.basename(os.path.dirname(package.path.parent)) == SCRIPTS_DIR)
 
         commands_dict: Dict = package.script.get('commands', {})
         commands_names: List[str] = [command.get('name') for command in commands_dict if 'name' in command]
@@ -182,7 +182,7 @@ def _pylint_plugin(package_path: Path):
     Args:
         package_path (Path): Pack path.
     """
-    plugin_dirs = Path(__file__).parent / 'resources' / 'pylint_plugins'
+    plugin_dirs = Path(__file__).parent.parent / 'resources' / 'pylint_plugins'
 
     try:
         for file in plugin_dirs.iterdir():

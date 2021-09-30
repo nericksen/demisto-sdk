@@ -46,14 +46,3 @@ class PythonBaseLinter(BaseLinter):
             # Use default of python if is_py2 flag was not given.
             py_num_str = '2' if is_py2 else ''
         return f'python{py_num_str}'
-
-    def get_python_version(self, python_version_from_yml: Optional[str], images: List[str]) -> float:
-        if self.lint_global_facts.has_docker_engine:
-            python_version = next((get_python_version_from_image(image) for image in images), self.DEFAULT_PYTHON3)
-        else:
-            # TODO: why default is python3 if subtype not found?
-            if not python_version_from_yml:
-                python_version = self.DEFAULT_PYTHON3
-            else:
-                python_version = self.DEFAULT_PYTHON3 if python_version_from_yml == 'python3' else self.DEFAULT_PYTHON2
-        return python_version

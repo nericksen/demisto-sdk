@@ -54,7 +54,7 @@ class PylintLinter(DockerBaseLinter):
         # disable xsoar linter messages
         disable = ['bad-option-value']
         # TODO: remove when pylint will update its version to support py3.9
-        # if docker_version and docker_version >= 3.9:
+        if self.py >= 3.9:
         #     disable.append('unsubscriptable-object')
         command += f" --disable={','.join(disable)}"
         # Disable specific errors

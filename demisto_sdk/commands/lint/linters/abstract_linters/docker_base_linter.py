@@ -72,7 +72,7 @@ class DockerBaseLinter(BaseLinter):
                      test_image: str) -> Tuple:
         log_prompt = f'{package.name} - {self.linter_name} - Image {test_image}'
         click.secho(f'{log_prompt} - Start')
-        container_name = f'{package.name}-{self.linter_name}'
+        container_name = f'{package.name}-{self.linter_name}'.replace(' ', '_')
         # Check if previous run left container a live if it do, we remove it
         self._docker_remove_container(container_name)
 
@@ -234,7 +234,7 @@ class DockerBaseLinter(BaseLinter):
 
         requirements: List[str] = self._get_requirements(docker_image)
         # Using DockerFile template
-        file_loader = FileSystemLoader(Path(__file__).parent / 'templates')
+        file_loader = FileSystemLoader(Path(__file__).parent.parent.parent / 'templates')
         env = Environment(loader=file_loader, lstrip_blocks=True, trim_blocks=True, autoescape=True)
         template = env.get_template('dockerfile.jinja2')
         try:
@@ -261,7 +261,7 @@ class DockerBaseLinter(BaseLinter):
                 errors = str(e)
         else:
             click.secho(f"{log_prompt} - Found existing image {test_image_name}")
-        build_errors: Optional[str] = self.build_docker(package.path, log_prompt, test_image_name, template)
+        build_errors: Optional[str] = self.build_docker(package.path.parent, log_prompt, test_image_name, template)
         if build_errors:
             errors = build_errors
         if test_image_id:

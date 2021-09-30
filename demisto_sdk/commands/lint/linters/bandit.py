@@ -46,6 +46,5 @@ class BanditLinter(PythonBaseLinter):
         command += " --format custom --msg-template '{abspath}:{line}: {test_id} " \
                    "[Severity: {severity} Confidence: {confidence}] {msg}'"
         # Generating path patterns - path1,path2,path3,..
-        files_list = [str(item) for item in lint_package_facts.lint_files]
-        command += f" -r {','.join(files_list)}"
+        command += f" -r {','.join(lint_package_facts.lint_files)}"
         return command

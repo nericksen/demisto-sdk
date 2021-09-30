@@ -17,7 +17,7 @@ from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
 class LintPackageFacts:
     images: List[str]
     env_vars: Dict
-    lint_files: Set[Path]
+    lint_files: Set[str]
 
 
 def build_package_facts(lint_global_facts: LintGlobalFacts, package: Union[Script, Integration]) -> LintPackageFacts:
@@ -46,7 +46,7 @@ def _get_env_vars() -> Dict:
 
 
 def _get_lint_files(lint_global_facts: LintGlobalFacts, package: Union[Script, Integration],
-                    log_prompt: str) -> Set[Path]:
+                    log_prompt: str) -> Set[str]:
     package_dir_path: Path = package.path.parent
     lint_files: Set[Path] = set()
     if package.script_type == TYPE_PYTHON:
@@ -72,7 +72,7 @@ def _get_lint_files(lint_global_facts: LintGlobalFacts, package: Union[Script, I
     if unit_test_file:
         lint_files = lint_files.difference({unit_test_file})
 
-    return lint_files
+    return {str(lint_file) for lint_file in lint_files}
 
 
 def _remove_gitignore_files(lint_global_facts: LintGlobalFacts, lint_files: Set[Path],
