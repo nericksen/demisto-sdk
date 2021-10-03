@@ -2,7 +2,7 @@ import os
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 
 import click
 
@@ -131,7 +131,8 @@ class XSOARLinter(PythonBaseLinter):
 
         return my_env
 
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         """
         Build command to execute with XSOAR Linter.
         Returns:

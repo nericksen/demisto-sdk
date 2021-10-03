@@ -46,7 +46,8 @@ class DockerBaseLinter(BaseLinter):
         self.docker_exit_code_to_linter_results = docker_exit_code_to_linter_results
 
     @abstractmethod
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         pass
 
     def _docker_login(self) -> bool:

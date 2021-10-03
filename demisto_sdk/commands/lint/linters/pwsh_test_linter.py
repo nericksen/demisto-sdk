@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Optional
 
 from demisto_sdk.commands.common.constants import TYPE_PWSH
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
@@ -30,7 +30,8 @@ class PowershellTestLinter(DockerBaseLinter):
             super().should_run(package)
         ])
 
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         """
         Build command for powershell test.
         Returns:

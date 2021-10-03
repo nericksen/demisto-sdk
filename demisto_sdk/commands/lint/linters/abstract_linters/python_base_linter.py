@@ -1,19 +1,16 @@
 from abc import abstractmethod
-from typing import Union, Optional, List
+from typing import Union, Optional
 
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
 from demisto_sdk.commands.lint.json_output_formatters import Formatter
-from demisto_sdk.commands.lint.lint_docker_utils import get_python_version_from_image
 from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_package_facts import LintPackageFacts
 from demisto_sdk.commands.lint.linters.abstract_linters.base_linter import BaseLinter
 
 
 class PythonBaseLinter(BaseLinter):
-    DEFAULT_PYTHON3 = 3.7
-    DEFAULT_PYTHON2 = 2.7
 
     def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, lint_name: str,
                  cwd_for_linter: Optional[str] = None, json_output_formatter: Optional[Formatter] = None):
@@ -21,7 +18,8 @@ class PythonBaseLinter(BaseLinter):
                          json_output_formatter=json_output_formatter)
 
     @abstractmethod
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         pass
 
     def should_run(self, package: Union[Script, Integration]) -> bool:

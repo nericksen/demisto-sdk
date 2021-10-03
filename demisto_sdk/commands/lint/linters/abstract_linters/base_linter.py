@@ -11,14 +11,18 @@ from demisto_sdk.commands.lint.json_output_formatters import Formatter
 from demisto_sdk.commands.lint.lint_constants import LinterResult, UnsuccessfulPackageReport, print_title
 from demisto_sdk.commands.lint.lint_global_facts import LintGlobalFacts
 from demisto_sdk.commands.lint.lint_package_facts import LintPackageFacts
+from demisto_sdk.commands.lint.lint_docker_utils import get_python_version_from_image
 
 
 class BaseLinter:
+    DEFAULT_PYTHON3 = 3.7
+    DEFAULT_PYTHON2 = 2.7
     # Some files are needed to be excluded from some of the linters.
     EXCLUDED_FILES = ['CommonServerPython.py', 'demistomock.py', 'CommonServerUserPython.py', 'conftest.py', 'venv']
     FAILED_PACKAGES: List[UnsuccessfulPackageReport] = []
     WARNING_PACKAGES: List[UnsuccessfulPackageReport] = []
     LENGTH_OF_LONGEST_LINTER_NAME: int = 0
+
 
     def __init__(self, disable_flag: bool, lint_global_facts: LintGlobalFacts, linter_name: str,
                  cwd_for_linter: Optional[str] = None, json_output_formatter: Optional[Formatter] = None):
@@ -83,7 +87,8 @@ class BaseLinter:
                 # TODO : in old linter, it does if errors else other. Why not take care of both anyway? check
 
     @abstractmethod
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         pass
 
     @staticmethod
@@ -149,3 +154,14 @@ class BaseLinter:
         fail_package_format = self.json_output_formatter.format('error', self.FAILED_PACKAGES)
         warning_package_format = self.json_output_formatter.format('warning', self.WARNING_PACKAGES)
         return fail_package_format + warning_package_format
+
+    def get_python_version(self, python_version_from_yml: Optional[str], images: List[str]) -> float:
+        if self.lint_global_facts.has_docker_engine:
+            python_version = next((get_python_version_from_image(image) for image in images), self.DEFAULT_PYTHON3)
+        else:
+            # TODO: why default is python3 if subtype not found?
+            if not python_version_from_yml:
+                python_version = self.DEFAULT_PYTHON3
+            else:
+                python_version = self.DEFAULT_PYTHON3 if python_version_from_yml == 'python3' else self.DEFAULT_PYTHON2
+        return python_version

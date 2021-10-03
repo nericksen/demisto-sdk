@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Optional
 
 from demisto_sdk.commands.common.constants import TYPE_PYTHON
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
@@ -39,7 +39,8 @@ class PylintLinter(DockerBaseLinter):
             super().should_run(package)
         ])
 
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         """"
         Build command to execute with pylint module https://docs.pylint.org/en/1.6.0/run.html#invoking-pylint.
         Args:
@@ -54,8 +55,8 @@ class PylintLinter(DockerBaseLinter):
         # disable xsoar linter messages
         disable = ['bad-option-value']
         # TODO: remove when pylint will update its version to support py3.9
-        if self.py >= 3.9:
-        #     disable.append('unsubscriptable-object')
+        if self.get_python_version(package.script_type, lint_package_facts.images) >= 3.9:
+            disable.append('unsubscriptable-object')
         command += f" --disable={','.join(disable)}"
         # Disable specific errors
         command += ' -d duplicate-string-formatting-argument'

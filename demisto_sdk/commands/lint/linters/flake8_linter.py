@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from demisto_sdk.commands.common.content.objects.pack_objects.integration.integration import Integration
 from demisto_sdk.commands.common.content.objects.pack_objects.script.script import Script
@@ -23,7 +23,8 @@ class Flake8Linter(PythonBaseLinter):
             super().should_run(package)
         ])
 
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         """
         Build command for executing flake8 lint check https://flake8.pycqa.org/en/latest/user/invocation.html.
         Returns:

@@ -118,7 +118,8 @@ class PytestLinter(DockerBaseLinter):
                 class_.FAILED_PACKAGES.append(UnsuccessfulPackageReport(package_name, error_msg))
                 # TODO : in old linter, it does if errors else other. Why not take care of both anyway? check
 
-    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts) -> str:
+    def build_linter_command(self, package: Union[Script, Integration], lint_package_facts: LintPackageFacts,
+                             docker_image: Optional[str] = None) -> str:
         """
         Build command to execute with pytest module https://docs.pytest.org/en/latest/usage.html.
         Returns:

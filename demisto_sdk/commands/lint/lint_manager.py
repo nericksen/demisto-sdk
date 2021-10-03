@@ -1,10 +1,12 @@
 import concurrent.futures
+import json
 import os
 import traceback
 from pathlib import Path
 from textwrap import TextWrapper
 from typing import List, Set, Optional, Union, Dict
-import json
+import re
+import shutil
 import click
 from git import Repo
 from wcmatch.pathlib import Path
@@ -229,7 +231,6 @@ class LintManager:
                 json.dump(json_output, f, indent=4)
 
             click.secho(f'Logs saved to {self.json_file_path}')
-        self.create_json_output(linters)
 
     def create_json_output(self, linters: List[BaseLinter]) -> List[Dict]:
         if os.path.exists(self.json_file_path):
@@ -246,7 +247,7 @@ class LintManager:
     def report_summary(self) -> None:
         wrapper_fail_pack = create_text_wrapper(3, '')
 
-        def _print_unsuccessful_list(unsuccessful_list: List[str], title: str, log_color: str):
+        def _print_unsuccessful(unsuccessful_list: Set[str], title: str, log_color: str):
             if unsuccessful_list:
                 click.secho(title)
                 for package_name in unsuccessful_list:
@@ -254,17 +255,17 @@ class LintManager:
 
         print_title(' Summary ')
         all_packages_count = len(self.packages)
-        failed_packages: List[str] = [package.package_name for linter in self.ALL_LINTERS_CLASSES for package in
-                                      linter.FAILED_PACKAGES]
-        warning_packages: List[str] = [package.package_name for linter in self.ALL_LINTERS_CLASSES for package in
-                                       linter.WARNING_PACKAGES]
+        failed_packages: Set[str] = {package.package_name for linter in self.ALL_LINTERS_CLASSES for package in
+                                     linter.FAILED_PACKAGES}
+        warning_packages: Set[str] = {package.package_name for linter in self.ALL_LINTERS_CLASSES for package in
+                                      linter.WARNING_PACKAGES}
         click.secho(f'Packages: {all_packages_count}')
         click.secho(f'Packages PASS: {all_packages_count - len(failed_packages)}', fg='green')
         click.secho(f'Packages FAIL: {len(failed_packages)}', fg='red')
         click.secho(f'Packages WARNINGS (can either PASS or FAIL): {len(warning_packages)}', fg='yellow')
         if not self._all_packs:
-            _print_unsuccessful_list(warning_packages, 'Warning Packages: ', 'yellow')
-        _print_unsuccessful_list(failed_packages, 'Failed Packages:', 'red')
+            _print_unsuccessful(warning_packages, 'Warning Packages: ', 'yellow')
+        _print_unsuccessful(failed_packages, 'Failed Packages:', 'red')
 
     def run_dev_packages(self) -> int:
         """ Runs the Lint command on all given packages.
@@ -304,3 +305,65 @@ def create_text_wrapper(indent: int, wrapper_name: str, preferred_width: int = 1
 def print_title(sentence: str, log_color: Optional[str] = None) -> None:
     hash_tags: str = '#' * len(sentence)
     click.secho(f'{hash_tags}\n{sentence}\n{hash_tags}', fg=log_color)
+
+# @contextmanager
+# def add_tmp_lint_files(content_repo: git.Repo, pack_path: Path, lint_files: List[Path], modules: Dict[Path, bytes],
+#                        pack_type: str):
+#     """ LintFiles is context manager to mandatory files for lint and test
+#             1. Entrance - download missing files to pack.
+#             2. Closing - Remove downloaded files from pack.
+#
+#         Args:
+#             pack_path(Path): Absolute path of pack
+#             lint_files(list): File to execute lint - for adding typing in python 2.7
+#             modules(dict): modules content to locate in pack path
+#             content_repo(Path): Repository object
+#             pack_type(st): Pack type.
+#
+#         Raises:
+#             IOError: if can't write to files due permissions or other reasons
+#     """
+#     added_modules: List[Path] = []
+#     try:
+#         # Add mandatory test,lint modules
+#         for module, content in modules.items():
+#             pwsh_module = TYPE_PWSH == pack_type and module.suffix == '.ps1'
+#             python_module = TYPE_PYTHON == pack_type and module.suffix == '.py'
+#             if pwsh_module or python_module:
+#                 cur_path = pack_path / module.name
+#                 if not cur_path.exists():
+#                     cur_path.write_bytes(content)
+#                     added_modules.append(cur_path)
+#         if pack_type == TYPE_PYTHON:
+#             # Append empty so it will exists
+#             cur_path = pack_path / "CommonServerUserPython.py"
+#             if not cur_path.exists():
+#                 cur_path.touch()
+#                 added_modules.append(cur_path)
+#
+#             # Add API modules to directory if needed
+#             module_regex = r'from ([\w\d]+ApiModule) import \*(?:  # noqa: E402)?'
+#             for lint_file in lint_files:
+#                 module_name = ""
+#                 data = lint_file.read_text()
+#                 module_match = re.search(module_regex, data)
+#                 if module_match:
+#                     module_name = module_match.group(1)
+#                     rel_api_path = Path('Packs/ApiModules/Scripts') / module_name / f'{module_name}.py'
+#                     cur_path = pack_path / f'{module_name}.py'
+#                     if content_repo:
+#                         module_path = content_repo / rel_api_path
+#                         shutil.copy(src=module_path, dst=cur_path)
+#                     else:
+#                         url = f'https://raw.githubusercontent.com/demisto/content/master/{rel_api_path}'
+#                         api_content = requests.get(url=url, verify=False).content
+#                         cur_path.write_bytes(api_content)
+#
+#                     added_modules.append(cur_path)
+#         yield
+#     except Exception as e:
+#         click.secho(f'add_tmp_lint_files unexpected exception: {str(e)}', fg='red')
+#         raise
+#     finally:
+#         # If we want to change handling of files after finishing - do it here
+#         pass
