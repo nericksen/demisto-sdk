@@ -18,8 +18,21 @@ NAME = "demisto-sdk"
 
 # Converting Pipfile to requirements style list because setup expects requirements.txt file.
 parser = configparser.ConfigParser()
-parser.read("Pipfile")
-install_requires = [f'{key}{value}'.replace('\"', '').replace('*', '') for key, value in parser['packages'].items()]
+
+
+def get_install_requires():
+    import json
+    import pathlib
+    with open(pathlib.Path(__file__).parent.resolve() / 'Pipfile.lock') as f:
+        lock_file = json.load(f)
+        reqs_from_lock = lock_file['default']
+        reqs = list()
+        for package_name, data in reqs_from_lock.items():
+            pck = f'{package_name}{data["version"]}'
+            if data.get('markers'):
+                pck += f'; {data["markers"]}'
+            reqs.append(pck)
+
 
 with open('README.md', 'r') as f:
     readme = f.read()
@@ -34,7 +47,7 @@ setup(
     author_email="",
     url="https://github.com/demisto/demisto-sdk",
     keywords=["Demisto"],
-    install_requires=install_requires,
+    install_requires=get_install_requires(),
     packages=find_packages(),
     include_package_data=True,
     entry_points={
