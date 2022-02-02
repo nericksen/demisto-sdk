@@ -4,26 +4,21 @@
 """
     Demisto SDK
 """
-import configparser
-
 from setuptools import find_packages, setup  # noqa: H301
 
 NAME = "demisto-sdk"
-# To install the library, run the following
-#
-# python setup.py install
-#
-# prerequisite: setuptools
-# http://pypi.python.org/pypi/setuptools
-
-# Converting Pipfile to requirements style list because setup expects requirements.txt file.
-parser = configparser.ConfigParser()
 
 
-def get_install_requires():
+def get_install_requires(section='default') -> list:
+    """Converting Pipfile.lock to requirements style list because setup expects requirements.txt file.
+
+    Examples:
+    >>> get_install_requires():
+    package==version; markers
+    """
     import json
     import pathlib
-    with open(pathlib.Path(__file__).parent.resolve() / 'Pipfile.lock') as f:
+    with (pathlib.Path(__file__).parent.resolve() / 'Pipfile.lock').open() as f:
         lock_file = json.load(f)
         reqs_from_lock = lock_file['default']
         reqs = list()
@@ -32,6 +27,7 @@ def get_install_requires():
             if data.get('markers'):
                 pck += f'; {data["markers"]}'
             reqs.append(pck)
+    return reqs
 
 
 with open('README.md', 'r') as f:
@@ -48,6 +44,7 @@ setup(
     url="https://github.com/demisto/demisto-sdk",
     keywords=["Demisto"],
     install_requires=get_install_requires(),
+    extra_require=get_install_requires(section='develop'),
     packages=find_packages(),
     include_package_data=True,
     entry_points={
