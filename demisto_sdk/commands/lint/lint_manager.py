@@ -183,8 +183,7 @@ class LintManager:
         return facts
 
     def _get_packages(self, content_repo: git.Repo, input: Union[str, List[str]], git: bool = False,
-                      all_packs: bool = False,
-                      base_branch: str = 'master') -> List[PosixPath]:
+                      all_packs: bool = False, base_branch: str = 'master') -> List[PosixPath]:
         """ Get packages paths to run lint command.
 
         Args:
