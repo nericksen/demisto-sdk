@@ -62,7 +62,7 @@ class GitUtil:
             if remote:
                 committed = {Path(os.path.join(item.a_path)) for item
                              in self.repo.remote(name=remote).refs[branch].commit.diff(
-                        current_branch_or_hash).iter_change_type('M')}.union(untrue_rename_committed)
+                    current_branch_or_hash).iter_change_type('M')}.union(untrue_rename_committed)
 
             # if remote does not exist we are checking against the commit sha1
             else:
@@ -98,7 +98,7 @@ class GitUtil:
         if remote:
             committed_added = {Path(os.path.join(item.a_path)) for item in
                                self.repo.remote(name=remote).refs[branch].commit.
-                                   diff(current_branch_or_hash).iter_change_type('A')}
+                               diff(current_branch_or_hash).iter_change_type('A')}
 
         # if remote does not exist we are checking against the commit sha1
         else:
@@ -149,13 +149,13 @@ class GitUtil:
         if remote:
             committed = {Path(os.path.join(item.a_path)) for item
                          in self.repo.remote(name=remote).refs[branch].commit.diff(
-                    current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
+                current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
 
         # if remote does not exist we are checking against the commit sha1
         else:
             committed = {Path(os.path.join(item.a_path)) for item
                          in self.repo.commit(rev=branch).diff(
-                    current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
+                current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
 
         # identify all files that were touched on this branch regardless of status
         # intersect these with all the committed files to identify the committed added files.
@@ -231,13 +231,13 @@ class GitUtil:
             if remote:
                 committed = {Path(os.path.join(item.a_path)) for item
                              in self.repo.remote(name=remote).refs[branch].commit.diff(
-                        current_branch_or_hash).iter_change_type('D')}
+                    current_branch_or_hash).iter_change_type('D')}
 
             # if remote does not exist we are checking against the commit sha1
             else:
                 committed = {Path(os.path.join(item.a_path)) for item
                              in self.repo.commit(rev=branch).diff(
-                        current_branch_or_hash).iter_change_type('D')}
+                    current_branch_or_hash).iter_change_type('D')}
 
             # identify all files that were touched on this branch regardless of status
             # intersect these with all the committed files to identify the committed added files.
@@ -295,13 +295,13 @@ class GitUtil:
             if remote:
                 committed = {(Path(item.a_path), Path(item.b_path)) for item
                              in self.repo.remote(name=remote).refs[branch].commit.diff(
-                        current_branch_or_hash).iter_change_type('R') if item.score == 100}
+                    current_branch_or_hash).iter_change_type('R') if item.score == 100}
 
             # if remote does not exist we are checking against the commit sha1
             else:
                 committed = {(Path(item.a_path), Path(item.b_path)) for item
                              in self.repo.commit(rev=branch).diff(
-                        current_branch_or_hash).iter_change_type('R') if item.score == 100}
+                    current_branch_or_hash).iter_change_type('R') if item.score == 100}
 
             # identify all files that were touched on this branch regardless of status
             # intersect these with all the committed files to identify the committed added files.
@@ -509,12 +509,12 @@ class GitUtil:
         if remote:
             return {Path(item.b_path) for item in self.repo.remote(name=remote).refs[branch].commit.diff(
                 current_branch_or_hash).iter_change_type('R') if item.score < 100 and
-                    self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
+                self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
 
         # if remote does not exist we are checking against the commit sha1
         return {Path(item.b_path) for item in self.repo.commit(rev=branch).diff(
             current_branch_or_hash).iter_change_type('R') if item.score < 100 and
-                self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
+            self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
 
     def _check_file_status(self, file_path: str, remote: str, branch: str) -> str:
         """Get the git status of a given file path

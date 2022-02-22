@@ -211,7 +211,7 @@ class LintManager:
                     packages.append(Path(item))
         if git:
             packages = self._filter_changed_packages(content_repo=content_repo, pkgs=packages,
-                                                 base_branch=base_branch)
+                                                     base_branch=base_branch)
             for pkg in packages:
                 print_v(f"Found changed package {Colors.Fg.cyan}{pkg}{Colors.reset}",
                         log_verbose=self._verbose)
