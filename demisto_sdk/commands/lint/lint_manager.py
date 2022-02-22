@@ -182,7 +182,8 @@ class LintManager:
         logger.debug("Docker daemon test passed")
         return facts
 
-    def _get_packages(self, content_repo: git.Repo, input: Union[str, List[str]], git: bool = False, all_packs: bool = False,
+    def _get_packages(self, content_repo: git.Repo, input: Union[str, List[str]], git: bool = False,
+                      all_packs: bool = False,
                       base_branch: str = 'master') -> List[PosixPath]:
         """ Get packages paths to run lint command.
 
@@ -194,31 +195,32 @@ class LintManager:
             base_branch (str): Name of the branch or sha1 commit to run the diff on.
 
         Returns:
-            List[PosixPath]: Pkgs to run lint
+            List[PosixPath]: packages to run lint on
         """
-        pkgs: list
+        packages: list
         if all_packs or git:
-            pkgs = LintManager._get_all_packages(content_dir=content_repo.working_dir)
+            packages = LintManager._get_all_packages(content_dir=content_repo.working_dir)
         else:  # specific pack as input, -i flag has been used
-            pkgs = []
+            packages = []
             if isinstance(input, str):
                 input = input.split(',')
             for item in input:
                 is_pack = os.path.isdir(item) and os.path.exists(os.path.join(item, PACKS_PACK_META_FILE_NAME))
                 if is_pack:
-                    pkgs.extend(LintManager._get_all_packages(content_dir=item))
+                    packages.extend(LintManager._get_all_packages(content_dir=item))
                 else:
-                    pkgs.append(Path(item))
+                    packages.append(Path(item))
         if git:
-            pkgs = self._filter_changed_packages(content_repo=content_repo, pkgs=pkgs,
+            packages = self._filter_changed_packages(content_repo=content_repo, pkgs=packages,
                                                  base_branch=base_branch)
-            for pkg in pkgs:
+            for pkg in packages:
                 print_v(f"Found changed package {Colors.Fg.cyan}{pkg}{Colors.reset}",
                         log_verbose=self._verbose)
-        if pkgs:
-            print(f"Executing lint and test on {Colors.Fg.cyan}{pkgs}{Colors.reset} integrations and scripts")
+        if packages:
+            packages_str = ", ".join(map(str, packages))
+            print(f"Executing lint and test on {Colors.Fg.cyan}{packages_str}{Colors.reset} integrations and scripts")
 
-        return pkgs
+        return packages
 
     @staticmethod
     def _get_all_packages(content_dir: str) -> List[str]:

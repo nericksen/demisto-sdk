@@ -62,7 +62,7 @@ class GitUtil:
             if remote:
                 committed = {Path(os.path.join(item.a_path)) for item
                              in self.repo.remote(name=remote).refs[branch].commit.diff(
-                    current_branch_or_hash).iter_change_type('M')}.union(untrue_rename_committed)
+                        current_branch_or_hash).iter_change_type('M')}.union(untrue_rename_committed)
 
             # if remote does not exist we are checking against the commit sha1
             else:
@@ -98,7 +98,7 @@ class GitUtil:
         if remote:
             committed_added = {Path(os.path.join(item.a_path)) for item in
                                self.repo.remote(name=remote).refs[branch].commit.
-                               diff(current_branch_or_hash).iter_change_type('A')}
+                                   diff(current_branch_or_hash).iter_change_type('A')}
 
         # if remote does not exist we are checking against the commit sha1
         else:
@@ -149,13 +149,13 @@ class GitUtil:
         if remote:
             committed = {Path(os.path.join(item.a_path)) for item
                          in self.repo.remote(name=remote).refs[branch].commit.diff(
-                current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
+                    current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
 
         # if remote does not exist we are checking against the commit sha1
         else:
             committed = {Path(os.path.join(item.a_path)) for item
                          in self.repo.commit(rev=branch).diff(
-                current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
+                    current_branch_or_hash).iter_change_type('A')}.union(untrue_rename_committed)
 
         # identify all files that were touched on this branch regardless of status
         # intersect these with all the committed files to identify the committed added files.
@@ -231,13 +231,13 @@ class GitUtil:
             if remote:
                 committed = {Path(os.path.join(item.a_path)) for item
                              in self.repo.remote(name=remote).refs[branch].commit.diff(
-                    current_branch_or_hash).iter_change_type('D')}
+                        current_branch_or_hash).iter_change_type('D')}
 
             # if remote does not exist we are checking against the commit sha1
             else:
                 committed = {Path(os.path.join(item.a_path)) for item
                              in self.repo.commit(rev=branch).diff(
-                    current_branch_or_hash).iter_change_type('D')}
+                        current_branch_or_hash).iter_change_type('D')}
 
             # identify all files that were touched on this branch regardless of status
             # intersect these with all the committed files to identify the committed added files.
@@ -295,13 +295,13 @@ class GitUtil:
             if remote:
                 committed = {(Path(item.a_path), Path(item.b_path)) for item
                              in self.repo.remote(name=remote).refs[branch].commit.diff(
-                    current_branch_or_hash).iter_change_type('R') if item.score == 100}
+                        current_branch_or_hash).iter_change_type('R') if item.score == 100}
 
             # if remote does not exist we are checking against the commit sha1
             else:
                 committed = {(Path(item.a_path), Path(item.b_path)) for item
                              in self.repo.commit(rev=branch).diff(
-                    current_branch_or_hash).iter_change_type('R') if item.score == 100}
+                        current_branch_or_hash).iter_change_type('R') if item.score == 100}
 
             # identify all files that were touched on this branch regardless of status
             # intersect these with all the committed files to identify the committed added files.
@@ -483,10 +483,10 @@ class GitUtil:
     def debug_print(self, debug: bool, status: str, staged: Set, committed: Set) -> None:
         if debug:
             click.echo(f'######## - {status} staged:')
-            click.echo(staged)
+            click.echo(map(str, staged))
             click.echo('\n')
             click.echo(f'######## - {status} committed:')
-            click.echo(committed)
+            click.echo(map(str, committed))
             click.echo('\n')
 
     def handle_wrong_renamed_status(self, status: str, remote: str, branch: str, staged_only: bool) -> Set[Path]:
@@ -509,12 +509,12 @@ class GitUtil:
         if remote:
             return {Path(item.b_path) for item in self.repo.remote(name=remote).refs[branch].commit.diff(
                 current_branch_or_hash).iter_change_type('R') if item.score < 100 and
-                self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
+                    self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
 
         # if remote does not exist we are checking against the commit sha1
         return {Path(item.b_path) for item in self.repo.commit(rev=branch).diff(
             current_branch_or_hash).iter_change_type('R') if item.score < 100 and
-            self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
+                self._check_file_status(file_path=str(item.b_path), remote=remote, branch=branch) == status}
 
     def _check_file_status(self, file_path: str, remote: str, branch: str) -> str:
         """Get the git status of a given file path
@@ -595,7 +595,8 @@ class GitUtil:
         added_files: Set[Path] = self.added_files(prev_ver=prev_ver, committed_only=committed_only,
                                                   staged_only=staged_only, debug=debug,
                                                   include_untracked=include_untracked)
-        renamed_files: Set[Path] = self.renamed_files(prev_ver=prev_ver, committed_only=committed_only,  # type: ignore[assignment]
+        renamed_files: Set[Path] = self.renamed_files(prev_ver=prev_ver, committed_only=committed_only,
+                                                      # type: ignore[assignment]
                                                       staged_only=staged_only, debug=debug,
                                                       include_untracked=include_untracked,
                                                       get_only_current_file_names=True)
