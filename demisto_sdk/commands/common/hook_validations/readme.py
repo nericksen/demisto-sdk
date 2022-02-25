@@ -124,7 +124,8 @@ class ReadMeValidator(BaseValidator):
             'POST',
             'http://localhost:6161',
             data=readme_content.encode('utf-8'),
-            timeout=20
+            timeout=20,
+            verify=False,
         )
         if response.status_code != 200:
             error_message, error_code = Errors.readme_error(response.text)
