@@ -2455,6 +2455,21 @@ def should_alternate_field_by_item(content_item, id_set):
     return False
 
 
+def get_url_with_retries(url: str, max_retries: int = 3, **kwargs):
+    kwargs['stream'] = kwargs.get('stream', True)
+    session = requests.Session()
+    error = Exception()
+    for _ in range(max_retries):
+        try:
+            response = session.get(url, **kwargs)
+            response.raise_for_status()
+        except Exception as e:
+            error = e
+        else:
+            return response
+    raise error
+
+
 def order_dict(data):
     """
     Order dict by default order
