@@ -211,9 +211,9 @@ class PackUniqueFilesValidator(BaseValidator):
 
     def validate_pack_readme_images(self):
         readme_file_path = os.path.join(self.pack_path, self.readme_file)
-        readme_validator = ReadMeValidator(readme_file_path)
-        errors = readme_validator.check_readme_relative_image_paths(is_pack_readme=True) + \
-            readme_validator.check_readme_absolute_image_paths(is_pack_readme=True)
+        readme_validator = ReadMeValidator(readme_file_path, ignored_errors=self.ignored_errors)
+        errors = readme_validator.check_readme_relative_image_paths(is_pack_readme=True)
+        errors += readme_validator.check_readme_absolute_image_paths(is_pack_readme=True)
         if errors:
             self._errors.extend(errors)
             return False
