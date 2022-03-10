@@ -698,7 +698,7 @@ class Linter:
             return test_image_id, str(e)
         # Trying to pull image based on dockerfile hash, will check if something changed
         errors = ""
-        test_image_name = f'devtest{docker_base_image[0]}-{hashlib.md5(dockerfile.encode("utf-8")).hexdigest()}'
+        test_image_name = f'devtest{docker_base_image[0]}-{hashlib.md5(dockerfile.encode("utf-8")).hexdigest()}-test'
         test_image = None
         try:
             logger.info(f"{log_prompt} - Trying to pull existing image {test_image_name}")
