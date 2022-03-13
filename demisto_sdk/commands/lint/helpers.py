@@ -7,11 +7,13 @@ import shlex
 import shutil
 import sqlite3
 import tarfile
+import tempfile
 import textwrap
 from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Union
+from uuid import uuid4
 
 # Third party packages
 import coverage
@@ -20,6 +22,7 @@ import docker.errors
 import git
 import requests
 from docker.models.containers import Container
+from docker.types import Mount
 from packaging.version import parse
 
 # Local packages
@@ -570,3 +573,127 @@ def generate_coverage_report(html=False, xml=False, report=True, cov_dir='covera
         except coverage.misc.CoverageException as warning:
             logger.warning(str(warning))
             return
+
+
+def extract_docker_build_error(build_error):
+    build_logs = list(map(lambda x: x.get('stream') or x.get('error') or str(x), build_error.build_log))
+    return ''.join(build_logs)
+
+
+class TempLocalDir:
+    def __init__(self, path):
+        self._orig_path = Path(path)
+        self._path = None
+
+    @property
+    def path(self):
+        if not self._path:
+            raise FileNotFoundError()
+        return self._path
+
+    def copy_file(self, file_path, ignore_errors=False):
+        file = Path(file_path)
+        new_file = self.path / file.name
+        try:
+            new_file.write_bytes(file.read_bytes())
+            print(new_file.read_text())
+        except Exception as exception:
+            if not ignore_errors:
+                raise exception
+        return new_file
+
+    def create_file(self, file_name):
+        file = self.path / file_name
+        file.touch()
+        return file
+
+    def __enter__(self):
+        uuid = str(uuid4())
+        self._path = self._orig_path / uuid
+        self._path.mkdir()
+        return self
+
+    def __exit__(self, *_):
+        shutil.rmtree(self.path)
+        self._path = None
+
+    def __del__(self):
+        if self._path is not None:
+            shutil.rmtree(self.path)
+            self._path = None
+
+
+class Docker:
+
+    @staticmethod
+    def pull_image(image: str):
+        docker_client = init_global_docker_client()
+        try:
+            return docker_client.images.get(image)
+        except docker.errors.ImageNotFound:
+            return docker_client.images.pull(image)
+
+    @staticmethod
+    def get_mounts(files):
+        mounts = []
+        for target, src in files:
+            try:
+                src = Path(src) if isinstance(src, str) else src
+                if src.exists():
+                    mounts.append(Mount(target, str(src.absolute()), 'bind'))
+            except Exception:
+                pass
+        return mounts
+
+    @staticmethod
+    def copy_files(container, files):
+        for dst, src in files:
+            try:
+                with tempfile.NamedTemporaryFile() as tar_file_path:
+                    with tarfile.open(name=tar_file_path.name, mode='w') as tar_file:
+                        tar_file.add(src, arcname=dst)
+                    with open(tar_file_path.name, 'rb') as byte_file:
+                        container.put_archive('/', byte_file.read())
+            except Exception:
+                pass
+
+    @staticmethod
+    def create_container(image: str, command: Union[str, List[str]], files_to_push: Optional[List] = None,
+                         environment: Optional[Dict] = None, mount_files=True, **kwargs):
+        kwargs = kwargs if kwargs is not None else {}
+        if mount_files:
+            kwargs['mounts'] = Docker.get_mounts(files_to_push)
+        container: docker.models.containers.Container = init_global_docker_client().containers.create(
+            image=image, command=command, environment=environment, **kwargs)
+        if not mount_files:
+            Docker.copy_files(container, files_to_push)
+        return container
+
+    @staticmethod
+    def create_image(base_image: str, image: str, container_type: str = 'python', install_packages=None):
+        changes = ['WORKDIR /devwork']
+        changes.append('ENTRYPOINT ["/bin/sh", "-c"]') if container_type == 'python' else None
+        script = f'{container_type}_image.sh'
+        with TempLocalDir('.') as tmp_dir:
+            requirements = tmp_dir.create_file('requirements.txt')
+            files_to_push = [
+                (f'/{script}', Path(__file__).parent / 'resources' / 'installation_scripts' / script),
+                ('/etc/pip.conf', tmp_dir.copy_file('/etc/pip.conf', ignore_errors=True)),
+                ('/etc/ssl/certs/ca-certificates.crt', tmp_dir.copy_file('/etc/ssl/certs/ca-certificates.crt', ignore_errors=True)),
+                ('/test-requirements.txt', requirements),
+            ]
+            if install_packages:
+                requirements.write_text('\n'.join(install_packages))
+
+            Docker.pull_image(base_image)
+
+            container: docker.models.containers.Container = Docker.create_container(
+                image=base_image, files_to_push=files_to_push, command=f'/{script}',
+                environment={'REQUESTS_CA_BUNDLE': '/etc/ssl/certs/ca-certificates.crt'},
+                mount_files=True
+            )
+            container.start()
+            container.wait(condition="exited")
+        repository, tag = image.split(':')
+        container.commit(repository=repository, tag=tag, changes=changes)
+        return image
