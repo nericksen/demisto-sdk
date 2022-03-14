@@ -30,8 +30,9 @@ from demisto_sdk.commands.lint.commands_builder import (
     build_bandit_command, build_flake8_command, build_mypy_command,
     build_pwsh_analyze_command, build_pwsh_test_command, build_pylint_command,
     build_pytest_command, build_vulture_command, build_xsoar_linter_command)
+from demisto_sdk.commands.lint.docker_helper import Docker
 from demisto_sdk.commands.lint.helpers import (EXIT_CODES, FAIL, RERUN, RL,
-                                               SUCCESS, WARNING, Docker,
+                                               SUCCESS, WARNING,
                                                add_tmp_lint_files,
                                                add_typing_module,
                                                coverage_report_editor,
