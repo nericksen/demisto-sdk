@@ -596,7 +596,6 @@ class TempLocalDir:
         new_file = self.path / file.name
         try:
             new_file.write_bytes(file.read_bytes())
-            print(new_file.read_text())
         except Exception as exception:
             if not ignore_errors:
                 raise exception
@@ -647,15 +646,16 @@ class Docker:
 
     @staticmethod
     def copy_files(container, files):
-        for dst, src in files:
-            try:
-                with tempfile.NamedTemporaryFile() as tar_file_path:
-                    with tarfile.open(name=tar_file_path.name, mode='w') as tar_file:
-                        tar_file.add(src, arcname=dst)
-                    with open(tar_file_path.name, 'rb') as byte_file:
-                        container.put_archive('/', byte_file.read())
-            except Exception:
-                pass
+        if files:
+            with tempfile.NamedTemporaryFile() as tar_file_path:
+                with tarfile.open(name=tar_file_path.name, mode='w') as tar_file:
+                    for dst, src in files:
+                        try:
+                            tar_file.add(src, arcname=dst)
+                        except Exception:
+                            pass
+                with open(tar_file_path.name, 'rb') as byte_file:
+                    container.put_archive('/', byte_file.read())
 
     @staticmethod
     def create_container(image: str, command: Union[str, List[str]], files_to_push: Optional[List] = None,
