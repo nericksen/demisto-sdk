@@ -1086,6 +1086,7 @@ class Integration:
             module_instance['mappingId'] = incident_configuration.get('classifier_id')
         if incident_configuration and incident_configuration.get('incoming_mapper_id'):
             module_instance['incomingMapperId'] = incident_configuration.get('incoming_mapper_id')
+
         if configuration['name'] == 'CreateIncidents':
             print(module_instance.items())
         return module_instance
