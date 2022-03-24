@@ -1,6 +1,5 @@
-from distutils.version import LooseVersion
-
 import click
+from packaging.version import Version
 
 from demisto_sdk.commands.common.constants import \
     LAYOUT_AND_MAPPER_BUILT_IN_FIELDS
@@ -105,7 +104,7 @@ class MapperValidator(ContentEntityValidator):
         from_version = self.current_file.get('fromVersion', '') or self.current_file.get('fromversion')
         if from_version:
             self.from_version = from_version
-            if LooseVersion(from_version) < LooseVersion(FROM_VERSION):
+            if Version(from_version) < Version(FROM_VERSION):
                 error_message, error_code = Errors.invalid_from_version_in_mapper()
                 if self.handle_error(error_message, error_code, file_path=self.file_path,
                                      suggested_fix=Errors.suggest_fix(self.file_path)):
@@ -126,7 +125,7 @@ class MapperValidator(ContentEntityValidator):
         to_version = self.current_file.get('toVersion', '') or self.current_file.get('toversion', '')
         if to_version:
             self.to_version = to_version
-            if LooseVersion(to_version) < LooseVersion(FROM_VERSION):
+            if Version(to_version) < Version(FROM_VERSION):
                 error_message, error_code = Errors.invalid_to_version_in_mapper()
                 if self.handle_error(error_message, error_code, file_path=self.file_path):
                     return False
@@ -139,7 +138,7 @@ class MapperValidator(ContentEntityValidator):
             bool. True if to version field is higher than from version field, else False.
         """
         if self.to_version and self.from_version:
-            if LooseVersion(self.to_version) <= LooseVersion(self.from_version):
+            if Version(self.to_version) <= Version(self.from_version):
                 error_message, error_code = Errors.from_version_higher_to_version()
                 if self.handle_error(error_message, error_code, file_path=self.file_path):
                     return False

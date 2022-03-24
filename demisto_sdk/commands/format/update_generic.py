@@ -1,11 +1,11 @@
 import os
 import re
 from copy import deepcopy
-from distutils.version import LooseVersion
 from typing import Any, Dict, Optional, Set, Union
 
 import click
 import dictdiffer
+from packaging.version import Version
 
 from demisto_sdk.commands.common.constants import (
     DEFAULT_CONTENT_ITEM_FROM_VERSION, INTEGRATION, PLAYBOOK)
@@ -229,7 +229,7 @@ class BaseUpdate:
             click.echo('Setting fromVersion field of a generic object')
         # If user entered specific from version key to be set
         if from_version:
-            if LooseVersion(from_version) < LooseVersion(GENERIC_OBJECTS_DEFAULT_FROMVERSION):
+            if Version(from_version) < Version(GENERIC_OBJECTS_DEFAULT_FROMVERSION):
                 click.echo(f'The given fromVersion value for generic entities should be'
                            f' {GENERIC_OBJECTS_DEFAULT_FROMVERSION} or above , given: {from_version}.\n'
                            f'Setting fromVersion field to {GENERIC_OBJECTS_DEFAULT_FROMVERSION}')
@@ -237,8 +237,8 @@ class BaseUpdate:
             else:
                 self.data[self.from_version_key] = from_version
         else:
-            if LooseVersion(self.data.get(self.from_version_key, DEFAULT_CONTENT_ITEM_FROM_VERSION)) < \
-                    LooseVersion(GENERIC_OBJECTS_DEFAULT_FROMVERSION):
+            if Version(self.data.get(self.from_version_key, DEFAULT_CONTENT_ITEM_FROM_VERSION)) < \
+                    Version(GENERIC_OBJECTS_DEFAULT_FROMVERSION):
                 self.data[self.from_version_key] = GENERIC_OBJECTS_DEFAULT_FROMVERSION
 
     def set_fromVersion(self, from_version=None, file_type: Optional[str] = None):
@@ -282,8 +282,8 @@ class BaseUpdate:
 
             # If it is new pack, and it has from version lower than 5.5.0, ask to set it to 5.5.0
             # Playbook has its own validation in update_fromversion_by_user() function in update_playbook.py
-            elif LooseVersion(self.data.get(self.from_version_key, DEFAULT_CONTENT_ITEM_FROM_VERSION)) < \
-                    LooseVersion(NEW_FILE_DEFAULT_5_5_0_FROMVERSION) and file_type != PLAYBOOK:
+            elif Version(self.data.get(self.from_version_key, DEFAULT_CONTENT_ITEM_FROM_VERSION)) < \
+                    Version(NEW_FILE_DEFAULT_5_5_0_FROMVERSION) and file_type != PLAYBOOK:
                 if self.assume_yes:
                     self.data[self.from_version_key] = NEW_FILE_DEFAULT_5_5_0_FROMVERSION
                 else:

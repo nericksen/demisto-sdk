@@ -6,13 +6,13 @@ import json
 import os
 import re
 from datetime import datetime
-from distutils.version import LooseVersion
 from pathlib import Path
 from typing import Dict, Tuple
 
 import click
 from dateutil import parser
 from git import GitCommandError, Repo
+from packaging.version import Version
 
 from demisto_sdk.commands.common import tools
 from demisto_sdk.commands.common.constants import (  # PACK_METADATA_PRICE,
@@ -308,7 +308,7 @@ class PackUniqueFilesValidator(BaseValidator):
         current_meta_file_content = get_json(metadata_file_path)
         old_version = old_meta_file_content.get('currentVersion', '0.0.0')
         current_version = current_meta_file_content.get('currentVersion', '0.0.0')
-        if LooseVersion(old_version) < LooseVersion(current_version):
+        if Version(old_version) < Version(current_version):
             return True
         elif self._add_error(Errors.pack_metadata_version_should_be_raised(self.pack, old_version), metadata_file_path):
             return False

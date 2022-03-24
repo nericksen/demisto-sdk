@@ -9,7 +9,6 @@ import time
 import urllib.parse
 import uuid
 from copy import deepcopy
-from distutils.version import LooseVersion
 from math import ceil
 from pprint import pformat
 from queue import Empty, Queue
@@ -21,6 +20,7 @@ import requests
 import urllib3
 from demisto_client.demisto_api import DefaultApi, Incident
 from demisto_client.demisto_api.rest import ApiException
+from packaging.version import Version
 from slack import WebClient as SlackClient
 
 from demisto_sdk.commands.common.constants import (
@@ -210,8 +210,8 @@ class TestPlaybook:
             skipped_tests_collected[self.configuration.playbook_id] = reason
             return False
         # Version mismatch
-        if not (LooseVersion(self.configuration.from_version) <= LooseVersion(
-                self.build_context.server_numeric_version) <= LooseVersion(self.configuration.to_version)):
+        if not (Version(self.configuration.from_version) <= Version(
+                self.build_context.server_numeric_version) <= Version(self.configuration.to_version)):
             self.build_context.logging_module.warning(
                 f'Test {self} ignored due to version mismatch '
                 f'(test versions: {self.configuration.from_version}-{self.configuration.to_version})\n')
@@ -2085,7 +2085,7 @@ def replace_external_playbook_configuration(client: DefaultApi, external_playboo
         return False, {}, ''
     server_version = get_demisto_version(client)
 
-    if LooseVersion(server_version.base_version) < LooseVersion('6.2.0'):  # type: ignore
+    if Version(server_version.base_version) < Version('6.2.0'):  # type: ignore
         logger_module.info("External Playbook not supported in versions previous to 6.2.0, skipping re-configuration.")
         return False, {}, ''
 

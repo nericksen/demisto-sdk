@@ -1,8 +1,9 @@
 import re
-from distutils.version import LooseVersion
 from enum import Enum
 from functools import reduce
 from typing import Dict, List
+
+from packaging.version import Version
 
 CAN_START_WITH_DOT_SLASH = '(?:./)?'
 NOT_TEST = '(?!Test)'
@@ -1364,7 +1365,7 @@ class MarketplaceVersions(Enum):
     MarketplaceV2 = 'marketplacev2'
 
 
-INDICATOR_FIELD_TYPE_TO_MIN_VERSION = {'html': LooseVersion('6.1.0'), 'grid': LooseVersion('5.5.0')}
+INDICATOR_FIELD_TYPE_TO_MIN_VERSION = {'html': Version('6.1.0'), 'grid': Version('5.5.0')}
 
 
 class IdSetKeys(Enum):

@@ -1,11 +1,11 @@
 import os
 import re
 import uuid
-from distutils.version import LooseVersion
 from typing import Tuple
 
 import click
 from git import InvalidGitRepositoryError
+from packaging.version import Version
 
 from demisto_sdk.commands.common.constants import (
     DEFAULT_CONTENT_ITEM_FROM_VERSION, PLAYBOOK, FileType)
@@ -101,8 +101,8 @@ class BasePlaybookYMLFormat(BaseUpdateYML):
                 else:
                     click.secho('Version format is not valid', fg='red')
 
-        elif not self.old_file and LooseVersion(self.data.get('fromversion', DEFAULT_CONTENT_ITEM_FROM_VERSION)) < \
-                LooseVersion(NEW_FILE_DEFAULT_5_5_0_FROMVERSION):
+        elif not self.old_file and Version(self.data.get('fromversion', DEFAULT_CONTENT_ITEM_FROM_VERSION)) < \
+                Version(NEW_FILE_DEFAULT_5_5_0_FROMVERSION):
             if self.assume_yes:
                 self.data['fromversion'] = NEW_FILE_DEFAULT_5_5_0_FROMVERSION
             else:

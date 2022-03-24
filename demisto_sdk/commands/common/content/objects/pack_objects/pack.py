@@ -1,9 +1,9 @@
 import logging
 import subprocess
-from distutils.version import LooseVersion
 from typing import Any, Dict, Iterator, Optional, Union
 
 import demisto_client
+from packaging.version import Version
 from wcmatch.pathlib import Path
 
 from demisto_sdk.commands.common.constants import (CLASSIFIERS_DIR,
@@ -334,7 +334,7 @@ class Pack:
 
     def is_server_version_ge(self, client, server_version_to_check):
         server_version = get_demisto_version(client)
-        return LooseVersion(server_version.base_version) >= LooseVersion(server_version_to_check)  # type: ignore
+        return Version(server_version.base_version) >= Version(server_version_to_check)  # type: ignore
 
     def upload(self, logger: logging.Logger, client: demisto_client, skip_validation: bool):
         """

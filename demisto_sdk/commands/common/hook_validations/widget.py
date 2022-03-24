@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from demisto_sdk.commands.common.errors import Errors
 from demisto_sdk.commands.common.hook_validations.content_entity_validator import \
@@ -45,7 +45,7 @@ class WidgetValidator(ContentEntityValidator):
         widget_from_version = self.current_file.get('fromVersion', '')
 
         if widget_data_type == 'metrics' and \
-                LooseVersion(widget_from_version) < LooseVersion(self.WIDGET_TYPE_METRICS_MIN_VERSION):
+                Version(widget_from_version) < Version(self.WIDGET_TYPE_METRICS_MIN_VERSION):
 
             error_message, error_code = Errors.invalid_fromversion_for_type_metrics()
             if self.handle_error(error_message, error_code, file_path=self.file_path,

@@ -1,7 +1,7 @@
-from distutils.version import LooseVersion
 from typing import Any, Dict, List, Optional
 
 import decorator
+from packaging.version import Version
 from requests import Response
 
 from demisto_sdk.commands.common.constants import (BETA_INTEGRATION_DISCLAIMER,
@@ -523,7 +523,7 @@ class Errors:
 
     @staticmethod
     @error_code_decorator
-    def field_version_is_not_correct(from_version_set: LooseVersion, expected_from_version: LooseVersion,
+    def field_version_is_not_correct(from_version_set: Version, expected_from_version: Version,
                                      reason_for_version: str):
         return f"The field has a fromVersion of: {from_version_set} but the minimal fromVersion " \
                f"is {expected_from_version}.\nReason for minimum version is: {reason_for_version}"
