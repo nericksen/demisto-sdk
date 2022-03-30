@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>%% PLAYBOOK NAME %%</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://jqueryui.com/resources/demos/style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/2.2.1/json2html.min.js"></script>
+  <style>
+    h2 {
+      text-align: center;
+    }
+
+    .startTask>rect {
+      fill: #5F7599 !important;
+      stroke: #D1D1D1 !important;
+      color: white !important;
+    }
+
+    .sectionHeaderTask>rect {
+      fill: #5F7599 !important;
+      stroke: #D1D1D1 !important;
+    }
+
+    .commandTask>rect {
+      fill: #FFFFFF !important;
+      stroke: #D1D1D1 !important;
+    }
+
+    .conditionTask>rect {
+      fill: #FFFFFF !important;
+      stroke: #D1D1D1 !important;
+    }
+
+    .subplaybookTask>rect {
+      fill: #FFFFFF !important;
+      stroke: #D1D1D1 !important;
+    }
+  
+    .container {
+      position: relative;
+    }
+
+    .playbook {
+      vertical-align: top;
+      position: absolute;
+    }
+
+    .task {
+      position: fixed;
+      top: 50%;
+      left: 20%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+
+    .tab {
+      width: 500px;
+      height: 600px;
+      overflow: auto;
+      padding: 5px;
+    }
+
+    .table {
+      display: table;
+      width: auto;
+    }
+
+    .row {
+      display: table-row;
+      width: auto;
+      clear: both;
+    }
+
+    .col {
+      float: left;
+      display: table-column;
+      vertical-align: top;
+      margin-bottom: 7px;
+      margin-right: 5px;
+    }
+
+    .get-where-transformers-text {
+      width: 120px;
+      margin-top: 2px;
+    }
+
+    .input-name {
+      font-weight: bold;
+    }
+
+    .input-mandatory {
+      color: red;
+    }
+
+    .input-description {
+      display: block !important;
+    }
+    
+    .input-value-container {
+      border: 1px solid gray;
+      margin-bottom: 20px;
+      padding: 7px;
+    }
+
+    .blue-val {
+      color: steelblue;
+    }
+
+    .input-val-list-item {
+      margin: 2px;
+    }
+
+    .header {
+      font-weight: bold;
+      color: gray;
+      margin: 7px;
+    }
+
+    .output-table-val {
+      border: 1px solid gray;
+      padding: 5px;
+      overflow-wrap: break-word;
+    }
+
+    .output-col-wide {
+      width: 200px;
+    }
+
+    .output-col-narrow {
+      width: 50px;
+    }
+
+    .output-table-val {
+      margin: 7px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <h2>%% PLAYBOOK NAME %%</h2>
+
+  <div class="container">
+    <div class="task" id="task-container">
+      <div id="tabs">
+        <ul id="tabs-list">
+          <li><a href="#tabs-inputs">Inputs</a></li>
+          <li><a href="#tabs-outputs">Outputs</a></li>
+          <li><a href="#tabs-conditions">Conditions</a></li>
+          <li><a href="#tabs-advanced">Advanced</a></li>
+          <li><a href="#tabs-loop">Loop</a></li>
+          <li><a href="#tabs-details">Details</a></li>
+          <li><a href="#tabs-timers">Timers</a></li>
+        </ul>
+        <div id="tabs-inputs" class="tab inputs-tab">
+          <div id="tabs-inputs-content">No inputs defined for this automation</div>
+        </div>
+        <div id="tabs-outputs" class="tab outputs-tab">
+          <div id="tabs-outputs-content">No outputs defined for this automation</div>
+        </div>
+        <div id="tabs-conditions" class="tab conditions-tab">
+          <div id="tabs-conditions-content">Conditions</div>
+        </div>
+        <div id="tabs-advanced" class="tab advanced-tab">
+          <div id="tabs-advanced-content">Advanced</div>
+        </div>
+        <div id="tabs-loop" class="tab loop-tab">
+          <div id="tabs-loop-content">Loop</div>
+        </div>
+        <div id="tabs-details" class="tab details-tab">
+          <div id="tabs-details-content">
+            <div id="tabs-details-tags">
+              <div class="header">Tag the result with:</div>
+              <div class="task-tags-value"></div>
+            </div>
+            <div id="tabs-details-description">
+              <div class="header">Task Description</div>
+              <div id="task-description-value"></div>
+            </div>
+          </div>
+        </div>
+        <div id="tabs-timers" class="tab timers-tab">
+          <div id="tabs-timers-content">No timers defined for this task.</div>
+        </div>
+      </div>
+    </div>
+    <div class="playbook">
+      <div class="mermaid">
+        %% DIAGRAM %%
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      securityLevel: 'loose',
+      flowchart: { curve: 'basis', useMaxWidth: false },
+      fontFamily: 'arial'
+    });
+  </script>
+  <script>
+    var clickedTask = false;
+    var taskInitialTabs = {
+      'inputs': $('#tabs-inputs').clone(),
+      'outputs': $('#tabs-outputs').clone(),
+      'conditions': $('#tabs-conditions').clone(),
+      'advanced': $('#tabs-advanced').clone(),
+      'loop': $('#tabs-loop').clone(),
+      'details': $('#tabs-details').clone(),
+      'timers': $('#tabs-timers').clone()
+    };
+
+    json2html.component.add({
+      'value/where': {
+        '<>': 'div',
+        'class': 'row',
+        'html': [
+          {
+            '<>': 'div',
+            'class': 'col get-where-transformers-text',
+            'text': 'Where'
+          },
+          {
+            '<>': 'div',
+            'class': 'col blue-val',
+            'html': [
+              {
+                '<>': 'div',
+                'class': 'input-val-list-item',
+                '{}': function(){
+                  return(this.Where);
+                },
+                'text': '${value}'
+              }
+            ]
+          }
+      ]},
+      'value/transformers': {
+        '<>': 'div',
+        'class': 'row',
+        'html': [
+          {
+            '<>': 'div',
+            'class': 'col get-where-transformers-text',
+            'text': 'Transformers'
+          },
+          {
+            '<>': 'div',
+            'class': 'col blue-val',
+            'html': [
+              {
+                '<>': 'div',
+                'class': 'input-val-list-item',
+                '{}': function(){
+                  return(this.Transformers);
+                },
+                'text': '${value}'
+              }
+            ]
+          }
+      ]}
+    });
+
+    function renderInputs(inputs) {
+      console.log('in renderInputs');
+      // $('#tabs-inputs-content').innerHTML = '';
+      if (inputs) {
+        let template = {
+          '<>': 'div',
+          'id': 'tabs-inputs-content',
+          'class': 'input-container',
+          'html': [
+            {
+              '<>': 'div',
+              'class': 'table name-description',
+              'html': [
+                {
+                  '<>': 'div',
+                  'class': 'row',
+                  'html': [
+                    // name
+                    {'<>': 'div', 'class': 'col input-name', 'text': '${Name}'},
+                    // mandatory symbol
+                    {'<>': 'div', 'class': 'col input-mandatory', 'text': function() { if (this.Mandatory) {return '*'}}}
+                  ]
+                },
+                {
+                  '<>': 'div', 'class': 'row', 'html': [
+                    // description
+                    {
+                      '<>': 'div', 'class': 'col input-description', 'text': function() {
+                        if (this.Description) {
+                          return this.Description;
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              '<>': 'div',
+              'class': 'input-value-container',
+              'html': function() {
+                if (typeof this.Value === 'string') {
+                  // simple value
+                  console.log('simple');
+                  console.log(this.Value);
+                  return this.Value;
+                }
+                // complex value
+                console.log('complex');
+                return $.json2html(this.Value, {
+                  '<>': 'div',
+                  'class': 'complex-input-value',
+                  'html': [
+                    {
+                      '<>': 'div',
+                      'class': 'table',
+                      'html': [
+                        {
+                          '<>': 'div', 'class': 'row', 'html': [
+                            {'<>': 'div', 'class': 'col get-where-transformers-text', 'text': 'Get'},
+                            {'<>': 'div', 'class': 'col blue-val', 'text': '${Get}'}
+                        ]}
+                      ]
+                    },
+                    {'[]': 'value/where'},
+                    {'[]': 'value/transformers'}
+                  ]
+              });
+            }}
+          ]
+        };
+        console.log(inputs);
+        $('#tabs-inputs-content').json2html(inputs, template, { replace: true });
+      }
+      setTaskTabVisibility('inputs', inputs);
+    }
+
+    function renderOutputs(outputs) {
+      // $('#tabs-outputs').innerHTML = '';
+      if (outputs) {
+        let template = {
+          '<>': 'div',
+          'class': 'output-container',
+          'id': 'tabs-outputs-content',
+          'html': [
+            {
+              '<>': 'div',
+              'class': 'table outputs',
+              'html': [
+                {
+                  '<>': 'div',
+                  'class': 'row',
+                  'html': [
+                    {
+                      '<>': 'div', 'class': 'col output-col-wide', 'html': [
+                        {'<>': 'div', 'class': 'header', 'text': 'Context Path'},
+                        {'<>': 'div', 'class': 'output-table-val', 'text': '${contextPath}'}
+                    ]},
+                    {
+                      '<>': 'div', 'class': 'col output-col-wide', 'html': [
+                        {'<>': 'div', 'class': 'header', 'text': 'Description'},
+                        {'<>': 'div', 'class': 'output-table-val', 'text': '${description}'}
+                    ]},
+                    {
+                      '<>': 'div', 'class': 'col output-col-narrow', 'html': [
+                        {'<>': 'div', 'class': 'header', 'text': 'Type'},
+                        {'<>': 'div', 'class': 'blue-val', 'text': '${type}'}
+                    ]}
+                  ]
+                }
+              ]
+            }
+          ]
+        };
+        $('#tabs-outputs-content').json2html(outputs, template, { replace: true });
+      }
+      setTaskTabVisibility('outputs', outputs);
+    }
+
+    function renderConditions(conditions) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      // let template = {
+      //   '<>': 'div',
+      //   'class': 'table timers',
+      //   'html': [{
+      //     '<>': 'div',
+      //     'class': 'row',
+      //     'html': [
+      //       {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+      //       {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+      //   ]
+      //   }]
+      // };
+      // $('#tabs-timers').json2html(timers, template, { replace: true });
+      setTaskTabVisibility('conditions', conditions);
+    }
+
+    function renderAdvanced(advanced) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      // let template = {
+      //   '<>': 'div',
+      //   'class': 'table timers',
+      //   'html': [{
+      //     '<>': 'div',
+      //     'class': 'row',
+      //     'html': [
+      //       {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+      //       {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+      //   ]
+      //   }]
+      // };
+      // $('#tabs-timers').json2html(timers, template, { replace: true });
+      setTaskTabVisibility('advanced', advanced);
+    }
+
+    function renderLoop(loop) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      // let template = {
+      //   '<>': 'div',
+      //   'class': 'table timers',
+      //   'html': [{
+      //     '<>': 'div',
+      //     'class': 'row',
+      //     'html': [
+      //       {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+      //       {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+      //   ]
+      //   }]
+      // };
+      // $('#tabs-timers').json2html(timers, template, { replace: true });
+      setTaskTabVisibility('loop', loop);
+    }
+
+    function renderDetails(details) {
+      if (details) {
+        if (details.tags) {
+          // $('#task-tags-value').innerHTML = '';
+          document.getElementById('tabs-details-tags').style.visibility = 'visible';
+          let tagsTemplate = {
+            '<>': 'div',
+            'class': 'table tags',
+            'id': 'task-tags-value',
+            'html': [{
+              '<>': 'div',
+              'class': 'row',
+              'html': [{
+                '<>': 'div',
+                'class': 'col tag-elem',
+                '{}': function() { return(this.tags); },
+                'text':'${value}'
+              }]
+            }]
+          };
+          $('#task-tags-value').json2html(details.tags, tagsTemplate, { replace: true });
+        } else {
+          document.getElementById('tabs-details-tags').style.visibility = 'hidden';
+        }
+        
+        if (details.description) {
+          document.getElementById('tabs-details-description').style.visibility = 'visible';
+          document.getElementById('task-description-value').innerHTML = details.description;
+        } else {
+          document.getElementById('tabs-details-description').style.visibility = 'hidden';
+        }
+      }
+      setTaskTabVisibility('details', details);
+    }
+
+    function renderTimers(timers) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      if (timers) {
+        let template = {
+          '<>': 'div',
+          'class': 'table timers',
+          'id': 'tabs-timers-content',
+          'html': [{
+            '<>': 'div',
+            'class': 'row',
+            'html': [
+              {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+              {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+          ]
+          }]
+        };
+        $('#tabs-timers-content').json2html(timers, template, { replace: true });
+      }
+      setTaskTabVisibility('timers', timers);
+    }
+
+    function setTaskTabVisibility(className, data) {
+      const display = data ? 'initial' : 'none';
+      const tabName = 'tabs' + className;
+      const idx = {
+        'inputs': 0,
+        'outputs': 1,
+        'conditions': 2,
+        'advanced': 3,
+        'loop': 4,
+        'details': 5,
+        'timers': 6
+      }[className];
+      document.getElementById('tabs-list').children[idx].style.display = display;
+      // document.getElementById(tabName).style.display = display;
+    }
+
+    function showTask(nodeId) {
+      console.log('clicked', nodeId);
+      taskContainer = document.getElementById("task-container");
+      taskContainer.style.display = "inline-block";
+
+      $.getJSON('https://raw.githubusercontent.com/demisto/content/testdan/tasks.json', function (tasks) {
+        "use strict";
+
+        renderInputs(tasks[nodeId].inputs);
+        renderOutputs(tasks[nodeId].outputs);
+        renderConditions(tasks[nodeId].conditions);
+        renderAdvanced(tasks[nodeId].advanced);
+        renderLoop(tasks[nodeId].loop);
+        renderDetails(tasks[nodeId].details);
+        renderTimers(tasks[nodeId].timers);
+      });
+      clickedTask = true;
+    }
+
+    window.onload = function hideTask() {
+      const task = document.getElementById('task-container');
+      task.style.display = 'none';
+    }
+
+    document.addEventListener('click', function handleClickOutsideTask(event) {
+      // console.log('user clicked: ', event.target);
+      if (clickedTask) {
+        clickedTask = false;
+      } else {
+        const task = document.getElementById('task-container');
+        if (!task.contains(event.target)) {
+          task.style.display = 'none';
+        }
+      }
+    });
+
+    $( function() {
+      $( "#tabs" ).tabs();
+    } );
+  </script>
+</body>
+
+</html>

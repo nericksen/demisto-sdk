@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Phishing - Generic v3</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://jqueryui.com/resources/demos/style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/2.2.1/json2html.min.js"></script>
+  <style>
+    h2 {
+      text-align: center;
+    }
+
+    .startTask>rect {
+      fill: #5F7599 !important;
+      stroke: #D1D1D1 !important;
+      color: white !important;
+    }
+
+    .sectionHeaderTask>rect {
+      fill: #5F7599 !important;
+      stroke: #D1D1D1 !important;
+    }
+
+    .commandTask>rect {
+      fill: #FFFFFF !important;
+      stroke: #D1D1D1 !important;
+    }
+
+    .conditionTask>rect {
+      fill: #FFFFFF !important;
+      stroke: #D1D1D1 !important;
+    }
+
+    .subplaybookTask>rect {
+      fill: #FFFFFF !important;
+      stroke: #D1D1D1 !important;
+    }
+  
+    .container {
+      position: relative;
+    }
+
+    .playbook {
+      vertical-align: top;
+      position: absolute;
+    }
+
+    .task {
+      position: fixed;
+      top: 50%;
+      left: 20%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+
+    .tab {
+      width: 500px;
+      height: 600px;
+      overflow: auto;
+      padding: 5px;
+    }
+
+    .table {
+      display: table;
+      width: auto;
+    }
+
+    .row {
+      display: table-row;
+      width: auto;
+      clear: both;
+    }
+
+    .col {
+      float: left;
+      display: table-column;
+      vertical-align: top;
+      margin-bottom: 7px;
+      margin-right: 5px;
+    }
+
+    .get-where-transformers-text {
+      width: 120px;
+      margin-top: 2px;
+    }
+
+    .input-name {
+      font-weight: bold;
+    }
+
+    .input-mandatory {
+      color: red;
+    }
+
+    .input-description {
+      display: block !important;
+    }
+    
+    .input-value-container {
+      border: 1px solid gray;
+      margin-bottom: 20px;
+      padding: 7px;
+    }
+
+    .blue-val {
+      color: steelblue;
+    }
+
+    .input-val-list-item {
+      margin: 2px;
+    }
+
+    .header {
+      font-weight: bold;
+      color: gray;
+      margin: 7px;
+    }
+
+    .output-table-val {
+      border: 1px solid gray;
+      padding: 5px;
+      overflow-wrap: break-word;
+    }
+
+    .output-col-wide {
+      width: 200px;
+    }
+
+    .output-col-narrow {
+      width: 50px;
+    }
+
+    .output-table-val {
+      margin: 7px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <h2>Phishing - Generic v3</h2>
+
+  <div class="container">
+    <div class="task" id="task-container">
+      <div id="tabs">
+        <ul id="tabs-list">
+          <li><a href="#tabs-inputs">Inputs</a></li>
+          <li><a href="#tabs-outputs">Outputs</a></li>
+          <li><a href="#tabs-conditions">Conditions</a></li>
+          <li><a href="#tabs-advanced">Advanced</a></li>
+          <li><a href="#tabs-loop">Loop</a></li>
+          <li><a href="#tabs-details">Details</a></li>
+          <li><a href="#tabs-timers">Timers</a></li>
+        </ul>
+        <div id="tabs-inputs" class="tab inputs-tab">
+          <div id="tabs-inputs-content">No inputs defined for this automation</div>
+        </div>
+        <div id="tabs-outputs" class="tab outputs-tab">
+          <div id="tabs-outputs-content">No outputs defined for this automation</div>
+        </div>
+        <div id="tabs-conditions" class="tab conditions-tab">
+          <div id="tabs-conditions-content">Conditions</div>
+        </div>
+        <div id="tabs-advanced" class="tab advanced-tab">
+          <div id="tabs-advanced-content">Advanced</div>
+        </div>
+        <div id="tabs-loop" class="tab loop-tab">
+          <div id="tabs-loop-content">Loop</div>
+        </div>
+        <div id="tabs-details" class="tab details-tab">
+          <div id="tabs-details-content">
+            <div id="tabs-details-tags">
+              <div class="header">Tag the result with:</div>
+              <div class="task-tags-value"></div>
+            </div>
+            <div id="tabs-details-description">
+              <div class="header">Task Description</div>
+              <div id="task-description-value"></div>
+            </div>
+          </div>
+        </div>
+        <div id="tabs-timers" class="tab timers-tab">
+          <div id="tabs-timers-content">No timers defined for this task.</div>
+        </div>
+      </div>
+    </div>
+    <div class="playbook">
+      <div class="mermaid">
+        flowchart TB
+TASK_0("<b>#0 Playbook Triggered</b>")
+TASK_0 --> TASK_39
+class TASK_0 startTask
+click TASK_0 call showTask()
+TASK_2("fa:fa-code <b>#2 Assign to analyst</b>")
+TASK_2 --> TASK_15
+class TASK_2 commandTask
+click TASK_2 call showTask()
+TASK_7("fa:fa-code <b>#7 Manually review the incident</b>")
+TASK_7 --> TASK_33
+class TASK_7 commandTask
+click TASK_7 call showTask()
+TASK_8("fa:fa-code <b>#8 Close investigation</b>")
+TASK_8 --> TASK_29
+class TASK_8 commandTask
+click TASK_8 call showTask()
+TASK_11("<b>#11 Triage</b>")
+TASK_11 --> TASK_26
+class TASK_11 sectionHeaderTask
+click TASK_11 call showTask()
+TASK_13("fa:fa-code <b>#13 Acknowledge incident was received</b>")
+TASK_13 --> TASK_56
+class TASK_13 commandTask
+click TASK_13 call showTask()
+TASK_15("fa:fa-circle-question <b>#15 Is the email malicious?</b>")
+TASK_15 -- ELSE --> TASK_31
+TASK_15 -- MALICIOUS --> TASK_30
+class TASK_15 conditionTask
+click TASK_15 call showTask()
+TASK_16("fa:fa-code <b>#16 Update the user that the reported email is safe</b>")
+TASK_16 --> TASK_8
+class TASK_16 commandTask
+click TASK_16 call showTask()
+TASK_18("<b>#18 Engage with User</b>")
+TASK_18 --> TASK_53
+class TASK_18 sectionHeaderTask
+click TASK_18 call showTask()
+TASK_22("fa:fa-book <b>#22 Detonate File - Generic</b>")
+TASK_22 --> TASK_52
+class TASK_22 subplaybookTask
+click TASK_22 call showTask()
+TASK_26("fa:fa-book <b>#26 Process Email - Generic v2</b>")
+TASK_26 --> TASK_55
+TASK_26 --> TASK_22
+TASK_26 --> TASK_88
+TASK_26 --> TASK_137
+class TASK_26 subplaybookTask
+click TASK_26 call showTask()
+TASK_27("<b>#27 Remediation</b>")
+TASK_27 --> TASK_97
+TASK_27 --> TASK_98
+TASK_27 --> TASK_99
+class TASK_27 sectionHeaderTask
+click TASK_27 call showTask()
+TASK_28("fa:fa-book <b>#28 Search And Delete Emails - Generic v2</b>")
+TASK_28 --> TASK_43
+class TASK_28 subplaybookTask
+click TASK_28 call showTask()
+TASK_29("<b>#29 Done</b>")
+class TASK_29 sectionHeaderTask
+click TASK_29 call showTask()
+TASK_30("<b>#30 Email Is Malicious</b>")
+TASK_30 --> TASK_149
+class TASK_30 sectionHeaderTask
+click TASK_30 call showTask()
+TASK_31("<b>#31 Undetermined</b>")
+TASK_31 --> TASK_7
+class TASK_31 sectionHeaderTask
+click TASK_31 call showTask()
+TASK_33("fa:fa-circle-question <b>#33 Is the email malicious?</b>")
+TASK_33 -- NO --> TASK_151
+TASK_33 -- YES --> TASK_149
+class TASK_33 conditionTask
+click TASK_33 call showTask()
+TASK_34("fa:fa-code <b>#34 Manually remediate  the incident</b>")
+TASK_34 --> TASK_43
+class TASK_34 commandTask
+click TASK_34 call showTask()
+TASK_36("fa:fa-circle-question <b>#36 Should emails be searched and deleted?</b>")
+TASK_36 -- ELSE --> TASK_43
+TASK_36 -- YES --> TASK_152
+class TASK_36 conditionTask
+click TASK_36 call showTask()
+TASK_37("fa:fa-circle-question <b>#37 Should indicators be blocked automatically?</b>")
+TASK_37 -- ELSE --> TASK_43
+TASK_37 -- YES --> TASK_91
+class TASK_37 conditionTask
+click TASK_37 call showTask()
+TASK_39("<b>#39 Start Detection Timer</b>")
+TASK_39 --> TASK_147
+class TASK_39 sectionHeaderTask
+click TASK_39 call showTask()
+TASK_43("<b>#43 Stop Remediation Timer</b>")
+TASK_43 --> TASK_8
+class TASK_43 sectionHeaderTask
+click TASK_43 call showTask()
+TASK_52("<b>#52 Indicator Enrichment</b>")
+TASK_52 --> TASK_92
+class TASK_52 sectionHeaderTask
+click TASK_52 call showTask()
+TASK_53("fa:fa-book <b>#53 Email Address Enrichment - Generic v2.1</b>")
+TASK_53 --> TASK_13
+class TASK_53 subplaybookTask
+click TASK_53 call showTask()
+TASK_55("fa:fa-book <b>#55 Extract Indicators From File - Generic v2</b>")
+TASK_55 --> TASK_52
+TASK_55 --> TASK_143
+class TASK_55 subplaybookTask
+click TASK_55 call showTask()
+TASK_56("<b>#56 Investigation</b>")
+TASK_56 --> TASK_101
+TASK_56 --> TASK_80
+TASK_56 --> TASK_131
+class TASK_56 sectionHeaderTask
+click TASK_56 call showTask()
+TASK_79("fa:fa-circle-question <b>#79 Should the email be authenticated?</b>")
+TASK_79 -- ELSE --> TASK_84
+TASK_79 -- YES --> TASK_82
+class TASK_79 conditionTask
+click TASK_79 call showTask()
+TASK_80("<b>#80 Email Authenticity Check</b>")
+TASK_80 --> TASK_79
+class TASK_80 sectionHeaderTask
+click TASK_80 call showTask()
+TASK_82("fa:fa-code <b>#82 Authenticate email</b>")
+TASK_82 --> TASK_83
+class TASK_82 commandTask
+click TASK_82 call showTask()
+TASK_83("fa:fa-code <b>#83 Save authenticity check result to incident field</b>")
+TASK_83 --> TASK_84
+class TASK_83 commandTask
+click TASK_83 call showTask()
+TASK_84("fa:fa-book <b>#84 Calculate Severity - Generic v2</b>")
+TASK_84 --> TASK_2
+class TASK_84 subplaybookTask
+click TASK_84 call showTask()
+TASK_85("fa:fa-code <b>#85 Save reporter email address in field</b>")
+TASK_85 --> TASK_18
+TASK_85 --> TASK_11
+class TASK_85 commandTask
+click TASK_85 call showTask()
+TASK_87("fa:fa-code <b>#87 Predict phishing type using pre-trained phishing model</b>")
+TASK_87 --> TASK_90
+class TASK_87 commandTask
+click TASK_87 call showTask()
+TASK_88("<b>#88 Machine Learning</b>")
+TASK_88 --> TASK_142
+TASK_88 --> TASK_143
+class TASK_88 sectionHeaderTask
+click TASK_88 call showTask()
+TASK_89("fa:fa-code <b>#89 Update incident with predictions</b>")
+TASK_89 --> TASK_84
+class TASK_89 commandTask
+click TASK_89 call showTask()
+TASK_90("fa:fa-circle-question <b>#90 Did the model predict the phishing type?</b>")
+TASK_90 -- ELSE --> TASK_84
+TASK_90 -- YES --> TASK_89
+class TASK_90 conditionTask
+click TASK_90 call showTask()
+TASK_91("fa:fa-book <b>#91 Block Indicators - Generic v2</b>")
+TASK_91 --> TASK_43
+class TASK_91 subplaybookTask
+click TASK_91 call showTask()
+TASK_92("fa:fa-book <b>#92 Entity Enrichment - Phishing v2</b>")
+TASK_92 --> TASK_56
+class TASK_92 subplaybookTask
+click TASK_92 call showTask()
+TASK_97("<b>#97 Block Indicators</b>")
+TASK_97 --> TASK_37
+class TASK_97 sectionHeaderTask
+click TASK_97 call showTask()
+TASK_98("<b>#98 Search & Delete Email</b>")
+TASK_98 --> TASK_36
+class TASK_98 sectionHeaderTask
+click TASK_98 call showTask()
+TASK_99("<b>#99 Manual Remediation</b>")
+TASK_99 --> TASK_34
+class TASK_99 sectionHeaderTask
+click TASK_99 call showTask()
+TASK_101("<b>#101 Email Campaign Search</b>")
+TASK_101 --> TASK_126
+class TASK_101 sectionHeaderTask
+click TASK_101 call showTask()
+TASK_126("fa:fa-book <b>#126 Detect & Manage Phishing Campaigns</b>")
+TASK_126 --> TASK_84
+class TASK_126 subplaybookTask
+click TASK_126 call showTask()
+TASK_131("<b>#131 Microsoft's Headers Check</b>")
+TASK_131 --> TASK_132
+class TASK_131 sectionHeaderTask
+click TASK_131 call showTask()
+TASK_132("fa:fa-circle-question <b>#132 Check Microsoft's Headers?</b>")
+TASK_132 -- ELSE --> TASK_84
+TASK_132 -- YES --> TASK_133
+class TASK_132 conditionTask
+click TASK_132 call showTask()
+TASK_133("fa:fa-book <b>#133 Process Microsoft's Anti-Spam Headers</b>")
+TASK_133 --> TASK_84
+class TASK_133 subplaybookTask
+click TASK_133 call showTask()
+TASK_135("fa:fa-book <b>#135 Detonate URL - Generic</b>")
+TASK_135 --> TASK_52
+class TASK_135 subplaybookTask
+click TASK_135 call showTask()
+TASK_137("fa:fa-circle-question <b>#137 Detonate URL?</b>")
+TASK_137 -- ELSE --> TASK_52
+TASK_137 -- YES --> TASK_135
+class TASK_137 conditionTask
+click TASK_137 call showTask()
+TASK_140("fa:fa-code <b>#140 Predict Phishing URLs</b>")
+TASK_140 --> TASK_84
+class TASK_140 commandTask
+click TASK_140 call showTask()
+TASK_142("<b>#142 Predict Phishing Type</b>")
+TASK_142 --> TASK_87
+class TASK_142 sectionHeaderTask
+click TASK_142 call showTask()
+TASK_143("<b>#143 Predict Phishing URLs</b>")
+TASK_143 --> TASK_140
+class TASK_143 sectionHeaderTask
+click TASK_143 call showTask()
+TASK_144("<b>#144 Incident Created Manually</b>")
+TASK_144 --> TASK_145
+class TASK_144 sectionHeaderTask
+click TASK_144 call showTask()
+TASK_145("fa:fa-circle-question <b>#145 Was the reporter of the phishing email specified?</b>")
+TASK_145 -- ELSE --> TASK_11
+TASK_145 -- YES --> TASK_85
+class TASK_145 conditionTask
+click TASK_145 call showTask()
+TASK_147("fa:fa-circle-question <b>#147 How was the incident created?</b>")
+TASK_147 -- ELSE --> TASK_85
+TASK_147 -- MANUALLY --> TASK_144
+class TASK_147 conditionTask
+click TASK_147 call showTask()
+TASK_148("fa:fa-code <b>#148 Update the user that the reported email is malicious</b>")
+TASK_148 --> TASK_27
+class TASK_148 commandTask
+click TASK_148 call showTask()
+TASK_149("fa:fa-circle-question <b>#149 Can the user be informed about the verdict?</b>")
+TASK_149 -- ELSE --> TASK_27
+TASK_149 -- YES - PHISHING --> TASK_148
+TASK_149 -- YES - PHISHING CAMPAIGN --> TASK_150
+class TASK_149 conditionTask
+click TASK_149 call showTask()
+TASK_150("fa:fa-code <b>#150 Update the user that the email is a malicious campaign</b>")
+TASK_150 --> TASK_27
+class TASK_150 commandTask
+click TASK_150 call showTask()
+TASK_151("fa:fa-circle-question <b>#151 Can the user be informed about the verdict?</b>")
+TASK_151 -- ELSE --> TASK_8
+TASK_151 -- YES --> TASK_16
+class TASK_151 conditionTask
+click TASK_151 call showTask()
+TASK_152("fa:fa-circle-question <b>#152 Check if original email was retrieved</b>")
+TASK_152 -- ELSE --> TASK_43
+TASK_152 -- YES --> TASK_28
+class TASK_152 conditionTask
+click TASK_152 call showTask()
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      theme: 'forest',
+      logLevel: 3,
+      securityLevel: 'loose',
+      flowchart: { curve: 'basis', useMaxWidth: false },
+      fontFamily: 'arial'
+    });
+  </script>
+  <script>
+    var clickedTask = false;
+    var taskInitialTabs = {
+      'inputs': $('#tabs-inputs').clone(),
+      'outputs': $('#tabs-outputs').clone(),
+      'conditions': $('#tabs-conditions').clone(),
+      'advanced': $('#tabs-advanced').clone(),
+      'loop': $('#tabs-loop').clone(),
+      'details': $('#tabs-details').clone(),
+      'timers': $('#tabs-timers').clone()
+    };
+
+    json2html.component.add({
+      'value/where': {
+        '<>': 'div',
+        'class': 'row',
+        'html': [
+          {
+            '<>': 'div',
+            'class': 'col get-where-transformers-text',
+            'text': 'Where'
+          },
+          {
+            '<>': 'div',
+            'class': 'col blue-val',
+            'html': [
+              {
+                '<>': 'div',
+                'class': 'input-val-list-item',
+                '{}': function(){
+                  return(this.Where);
+                },
+                'text': '${value}'
+              }
+            ]
+          }
+      ]},
+      'value/transformers': {
+        '<>': 'div',
+        'class': 'row',
+        'html': [
+          {
+            '<>': 'div',
+            'class': 'col get-where-transformers-text',
+            'text': 'Transformers'
+          },
+          {
+            '<>': 'div',
+            'class': 'col blue-val',
+            'html': [
+              {
+                '<>': 'div',
+                'class': 'input-val-list-item',
+                '{}': function(){
+                  return(this.Transformers);
+                },
+                'text': '${value}'
+              }
+            ]
+          }
+      ]}
+    });
+
+    function renderInputs(inputs) {
+      console.log('in renderInputs');
+      // $('#tabs-inputs-content').innerHTML = '';
+      if (inputs) {
+        let template = {
+          '<>': 'div',
+          'id': 'tabs-inputs-content',
+          'class': 'input-container',
+          'html': [
+            {
+              '<>': 'div',
+              'class': 'table name-description',
+              'html': [
+                {
+                  '<>': 'div',
+                  'class': 'row',
+                  'html': [
+                    // name
+                    {'<>': 'div', 'class': 'col input-name', 'text': '${Name}'},
+                    // mandatory symbol
+                    {'<>': 'div', 'class': 'col input-mandatory', 'text': function() { if (this.Mandatory) {return '*'}}}
+                  ]
+                },
+                {
+                  '<>': 'div', 'class': 'row', 'html': [
+                    // description
+                    {
+                      '<>': 'div', 'class': 'col input-description', 'text': function() {
+                        if (this.Description) {
+                          return this.Description;
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              '<>': 'div',
+              'class': 'input-value-container',
+              'html': function() {
+                if (typeof this.Value === 'string') {
+                  // simple value
+                  console.log('simple');
+                  console.log(this.Value);
+                  return this.Value;
+                }
+                // complex value
+                console.log('complex');
+                return $.json2html(this.Value, {
+                  '<>': 'div',
+                  'class': 'complex-input-value',
+                  'html': [
+                    {
+                      '<>': 'div',
+                      'class': 'table',
+                      'html': [
+                        {
+                          '<>': 'div', 'class': 'row', 'html': [
+                            {'<>': 'div', 'class': 'col get-where-transformers-text', 'text': 'Get'},
+                            {'<>': 'div', 'class': 'col blue-val', 'text': '${Get}'}
+                        ]}
+                      ]
+                    },
+                    {'[]': 'value/where'},
+                    {'[]': 'value/transformers'}
+                  ]
+              });
+            }}
+          ]
+        };
+        console.log(inputs);
+        $('#tabs-inputs-content').json2html(inputs, template, { replace: true });
+      }
+      setTaskTabVisibility('inputs', inputs);
+    }
+
+    function renderOutputs(outputs) {
+      // $('#tabs-outputs').innerHTML = '';
+      if (outputs) {
+        let template = {
+          '<>': 'div',
+          'class': 'output-container',
+          'id': 'tabs-outputs-content',
+          'html': [
+            {
+              '<>': 'div',
+              'class': 'table outputs',
+              'html': [
+                {
+                  '<>': 'div',
+                  'class': 'row',
+                  'html': [
+                    {
+                      '<>': 'div', 'class': 'col output-col-wide', 'html': [
+                        {'<>': 'div', 'class': 'header', 'text': 'Context Path'},
+                        {'<>': 'div', 'class': 'output-table-val', 'text': '${contextPath}'}
+                    ]},
+                    {
+                      '<>': 'div', 'class': 'col output-col-wide', 'html': [
+                        {'<>': 'div', 'class': 'header', 'text': 'Description'},
+                        {'<>': 'div', 'class': 'output-table-val', 'text': '${description}'}
+                    ]},
+                    {
+                      '<>': 'div', 'class': 'col output-col-narrow', 'html': [
+                        {'<>': 'div', 'class': 'header', 'text': 'Type'},
+                        {'<>': 'div', 'class': 'blue-val', 'text': '${type}'}
+                    ]}
+                  ]
+                }
+              ]
+            }
+          ]
+        };
+        $('#tabs-outputs-content').json2html(outputs, template, { replace: true });
+      }
+      setTaskTabVisibility('outputs', outputs);
+    }
+
+    function renderConditions(conditions) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      // let template = {
+      //   '<>': 'div',
+      //   'class': 'table timers',
+      //   'html': [{
+      //     '<>': 'div',
+      //     'class': 'row',
+      //     'html': [
+      //       {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+      //       {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+      //   ]
+      //   }]
+      // };
+      // $('#tabs-timers').json2html(timers, template, { replace: true });
+      setTaskTabVisibility('conditions', conditions);
+    }
+
+    function renderAdvanced(advanced) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      // let template = {
+      //   '<>': 'div',
+      //   'class': 'table timers',
+      //   'html': [{
+      //     '<>': 'div',
+      //     'class': 'row',
+      //     'html': [
+      //       {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+      //       {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+      //   ]
+      //   }]
+      // };
+      // $('#tabs-timers').json2html(timers, template, { replace: true });
+      setTaskTabVisibility('advanced', advanced);
+    }
+
+    function renderLoop(loop) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      // let template = {
+      //   '<>': 'div',
+      //   'class': 'table timers',
+      //   'html': [{
+      //     '<>': 'div',
+      //     'class': 'row',
+      //     'html': [
+      //       {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+      //       {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+      //   ]
+      //   }]
+      // };
+      // $('#tabs-timers').json2html(timers, template, { replace: true });
+      setTaskTabVisibility('loop', loop);
+    }
+
+    function renderDetails(details) {
+      if (details) {
+        if (details.tags) {
+          // $('#task-tags-value').innerHTML = '';
+          document.getElementById('tabs-details-tags').style.visibility = 'visible';
+          let tagsTemplate = {
+            '<>': 'div',
+            'class': 'table tags',
+            'id': 'task-tags-value',
+            'html': [{
+              '<>': 'div',
+              'class': 'row',
+              'html': [{
+                '<>': 'div',
+                'class': 'col tag-elem',
+                '{}': function() { return(this.tags); },
+                'text':'${value}'
+              }]
+            }]
+          };
+          $('#task-tags-value').json2html(details.tags, tagsTemplate, { replace: true });
+        } else {
+          document.getElementById('tabs-details-tags').style.visibility = 'hidden';
+        }
+        
+        if (details.description) {
+          document.getElementById('tabs-details-description').style.visibility = 'visible';
+          document.getElementById('task-description-value').innerHTML = details.description;
+        } else {
+          document.getElementById('tabs-details-description').style.visibility = 'hidden';
+        }
+      }
+      setTaskTabVisibility('details', details);
+    }
+
+    function renderTimers(timers) {
+      // $('#tabs-timers').replaceWith(taskInitialTabs.timers);
+      if (timers) {
+        let template = {
+          '<>': 'div',
+          'class': 'table timers',
+          'id': 'tabs-timers-content',
+          'html': [{
+            '<>': 'div',
+            'class': 'row',
+            'html': [
+              {'<>': 'div', 'class': 'col blue-val', 'text': '${action}'},
+              {'<>': 'div', 'class': 'col input-name', 'text': '${fieldname}'},
+          ]
+          }]
+        };
+        $('#tabs-timers-content').json2html(timers, template, { replace: true });
+      }
+      setTaskTabVisibility('timers', timers);
+    }
+
+    function setTaskTabVisibility(className, data) {
+      const display = data ? 'initial' : 'none';
+      const tabName = 'tabs' + className;
+      const idx = {
+        'inputs': 0,
+        'outputs': 1,
+        'conditions': 2,
+        'advanced': 3,
+        'loop': 4,
+        'details': 5,
+        'timers': 6
+      }[className];
+      document.getElementById('tabs-list').children[idx].style.display = display;
+      // document.getElementById(tabName).style.display = display;
+    }
+
+    function showTask(nodeId) {
+      console.log('clicked', nodeId);
+      taskContainer = document.getElementById("task-container");
+      taskContainer.style.display = "inline-block";
+
+      $.getJSON('https://raw.githubusercontent.com/demisto/content/testdan/tasks.json', function (tasks) {
+        "use strict";
+
+        renderInputs(tasks[nodeId].inputs);
+        renderOutputs(tasks[nodeId].outputs);
+        renderConditions(tasks[nodeId].conditions);
+        renderAdvanced(tasks[nodeId].advanced);
+        renderLoop(tasks[nodeId].loop);
+        renderDetails(tasks[nodeId].details);
+        renderTimers(tasks[nodeId].timers);
+      });
+      clickedTask = true;
+    }
+
+    window.onload = function hideTask() {
+      const task = document.getElementById('task-container');
+      task.style.display = 'none';
+    }
+
+    document.addEventListener('click', function handleClickOutsideTask(event) {
+      // console.log('user clicked: ', event.target);
+      if (clickedTask) {
+        clickedTask = false;
+      } else {
+        const task = document.getElementById('task-container');
+        if (!task.contains(event.target)) {
+          task.style.display = 'none';
+        }
+      }
+    });
+
+    $( function() {
+      $( "#tabs" ).tabs();
+    } );
+  </script>
+</body>
+
+</html>
